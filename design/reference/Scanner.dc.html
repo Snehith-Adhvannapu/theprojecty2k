@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Project Y2K Scanner States</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#050505}
+</style>
+</helmet>
+<div style="width:1700px;height:780px;box-sizing:border-box;padding:40px 14px;background:#050505;color:#f1eeea;font-family:Manrope,sans-serif;display:flex;gap:20px;align-items:flex-start">
+
+<!-- 1 READY -->
+<div style="width:262px">
+<p style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;color:#8e8e93">1 &middot; Ready to scan</p>
+<div style="width:262px;height:620px;box-sizing:border-box;border:1px solid #333333;border-radius:2px;background:#050505;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #222222;font-size:13px">
+<span style="display:inline-flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#3ddc84"></span>Online</span>
+<span style="color:#8e8e93">[VOLUNTEER]</span>
+</div>
+<div style="flex:1;margin:14px;position:relative;border:1px solid #222222;background:#0d0d0d;display:flex;align-items:center;justify-content:center">
+<span style="position:absolute;top:12px;left:12px;width:28px;height:28px;border-top:3px solid #e3302f;border-left:3px solid #e3302f"></span>
+<span style="position:absolute;top:12px;right:12px;width:28px;height:28px;border-top:3px solid #e3302f;border-right:3px solid #e3302f"></span>
+<span style="position:absolute;bottom:12px;left:12px;width:28px;height:28px;border-bottom:3px solid #e3302f;border-left:3px solid #e3302f"></span>
+<span style="position:absolute;bottom:12px;right:12px;width:28px;height:28px;border-bottom:3px solid #e3302f;border-right:3px solid #e3302f"></span>
+<p style="margin:0;font-size:14px;color:#8e8e93;text-align:center;padding:0 24px">Camera view<br>Point at the QR</p>
+</div>
+<div style="padding:0 14px 14px;display:flex;flex-direction:column;gap:12px">
+<button style="min-height:52px;background:transparent;border:1px solid #b0161f;border-radius:2px;color:#f1eeea;font-family:Manrope,sans-serif;font-size:15px;font-weight:600;cursor:pointer">Find guest by name or code</button>
+<p style="margin:0;font-size:13px;color:#8e8e93;text-align:center">Checked in [N] of [TOTAL]</p>
+</div>
+</div>
+</div>
+
+<!-- 2 GREEN -->
+<div style="width:262px">
+<p style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;color:#8e8e93">2 &middot; Admitted</p>
+<div style="width:262px;height:620px;box-sizing:border-box;border-radius:2px;background:#0a7a3d;color:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px">
+<p style="margin:0;font-size:96px;line-height:1">&#10003;</p>
+<p style="margin:0;font-family:'Bebas Neue',sans-serif;font-size:72px;line-height:0.9;letter-spacing:0.03em">ADMIT</p>
+<p style="margin:8px 0 0;font-size:22px;font-weight:600">[GUEST NAME]</p>
+<p style="margin:0;font-size:15px">[PASS NAME]</p>
+<p style="margin:12px 0 0;font-family:'Bebas Neue',sans-serif;font-size:56px;line-height:1;letter-spacing:0.03em">ADMITS 2</p>
+<p style="margin:16px 0 0;font-size:13px">Back to camera in 2 sec &middot; tap to skip</p>
+</div>
+</div>
+
+<!-- 3 RED -->
+<div style="width:262px">
+<p style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;color:#8e8e93">3 &middot; Rejected (already used)</p>
+<div style="width:262px;height:620px;box-sizing:border-box;border-radius:2px;background:#a50e14;color:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px">
+<p style="margin:0;font-size:96px;line-height:1">&#10005;</p>
+<p style="margin:0;font-family:'Bebas Neue',sans-serif;font-size:64px;line-height:0.9;letter-spacing:0.03em">DO NOT ADMIT</p>
+<p style="margin:8px 0 0;font-size:20px;font-weight:800;letter-spacing:0.08em">ALREADY USED</p>
+<p style="margin:0;font-size:16px">at [HH:MM] by [VOLUNTEER]</p>
+<p style="margin:12px 0 0;font-size:18px;font-weight:600">[GUEST NAME]</p>
+<p style="margin:16px 0 0;font-size:13px">Check their ID. Call the lead if unsure.</p>
+</div>
+</div>
+
+<!-- 4 AMBER -->
+<div style="width:262px">
+<p style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;color:#8e8e93">4 &middot; No connection</p>
+<div style="width:262px;height:620px;box-sizing:border-box;border-radius:2px;background:#f5a623;color:#1a1200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px">
+<p style="margin:0;font-size:96px;line-height:1;font-weight:800">!</p>
+<p style="margin:0;font-family:'Bebas Neue',sans-serif;font-size:60px;line-height:0.9;letter-spacing:0.03em">NO CONNECTION</p>
+<p style="margin:8px 0 0;font-size:18px;font-weight:800">NOT ADMITTED YET</p>
+<p style="margin:0;font-size:15px">Retrying&hellip; this is not a bad ticket.</p>
+<button style="margin-top:16px;min-height:52px;padding:0 20px;background:#1a1200;border:0;border-radius:2px;color:#f5a623;font-family:Manrope,sans-serif;font-size:15px;font-weight:600;cursor:pointer">Switch to offline list</button>
+</div>
+</div>
+
+<!-- 5 BLUE -->
+<div style="width:262px">
+<p style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;color:#8e8e93">5 &middot; Admitted offline</p>
+<div style="width:262px;height:620px;box-sizing:border-box;border-radius:2px;background:#1d4ed8;color:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px">
+<p style="margin:0;font-size:96px;line-height:1">&#10003;</p>
+<p style="margin:0;font-family:'Bebas Neue',sans-serif;font-size:60px;line-height:0.9;letter-spacing:0.03em">ADMIT</p>
+<p style="margin:0;font-size:16px;font-weight:800;letter-spacing:0.12em">OFFLINE MODE</p>
+<p style="margin:8px 0 0;font-size:22px;font-weight:600">[GUEST NAME]</p>
+<p style="margin:12px 0 0;font-family:'Bebas Neue',sans-serif;font-size:48px;line-height:1;letter-spacing:0.03em">ADMITS 1</p>
+<p style="margin:16px 0 0;font-size:13px">Saved on this phone. [N] waiting to sync. Run one lane while offline.</p>
+</div>
+</div>
+
+<!-- 6 LOOKUP -->
+<div style="width:262px">
+<p style="margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:0.2em;color:#8e8e93">6 &middot; Find guest (backup)</p>
+<div style="width:262px;height:620px;box-sizing:border-box;border:1px solid #333333;border-radius:2px;background:#050505;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #222222;font-size:13px">
+<span style="font-weight:600">Find guest</span>
+<span style="color:#8e8e93">&larr; Camera</span>
+</div>
+<div style="padding:14px;display:flex;flex-direction:column;gap:12px">
+<label for="s-q" style="font-size:13px;color:#8e8e93">Name, phone last 4, or short code</label>
+<input id="s-q" type="text" placeholder="Y2K-XXXXX" style="box-sizing:border-box;width:100%;height:48px;padding:0 12px;background:#0d0d0d;border:1px solid rgba(241,238,234,0.3);border-radius:2px;color:#f1eeea;font-family:Manrope,sans-serif;font-size:16px">
+<div style="padding:14px;border:1px solid #333333;border-radius:2px;background:#0d0d0d;display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font-size:16px;font-weight:600">[GUEST NAME]</p>
+<p style="margin:0;font-size:13px;color:#8e8e93">Y2K-XXXXX &middot; [PASS NAME] &middot; Admits 1 &middot; ...[0000]</p>
+<p style="margin:0;font-size:13px">Status: <strong style="font-weight:600">Valid</strong></p>
+<button style="margin-top:6px;min-height:52px;background:#b0161f;border:1px solid #e3302f;border-radius:2px;color:#f1eeea;font-family:Manrope,sans-serif;font-size:15px;font-weight:600;cursor:pointer">ADMIT</button>
+</div>
+<div style="padding:14px;border:1px solid #222222;border-radius:2px;background:#0a0a0a;display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font-size:16px;font-weight:600;color:#8e8e93">[GUEST NAME]</p>
+<p style="margin:0;font-size:13px;color:#8e8e93">Y2K-XXXXX &middot; [PASS NAME] &middot; ...[0000]</p>
+<p style="margin:0;font-size:13px;color:#e3302f">Already used at [HH:MM]</p>
+</div>
+<p style="margin:0;font-size:13px;color:#8e8e93">Manual admits are logged with your name.</p>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":780}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

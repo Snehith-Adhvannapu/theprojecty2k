@@ -1,0 +1,143 @@
+/* ==========================================================================
+   Project Y2K: design tokens
+   Source: reference site "VOID//RELIC" (chrome-noir-editorial.lovable.app).
+   Values read from its live CSS. Reference only: do NOT reuse its images,
+   copy, or name. Rebuild the treatment with our own photos.
+   RULE FOR CLAUDE CODE: use ONLY these tokens. No ad-hoc colors, radii, shadows.
+   ========================================================================== */
+
+/* --- Fonts (load with next/font, subset, display: swap) ------------------
+   Bebas Neue 400              display / headlines (all-caps condensed)
+   Cormorant Garamond 500 + 500 italic   one accent word per headline
+   Manrope 400 / 500 / 600     body, labels, UI
+   -------------------------------------------------------------------------- */
+
+:root {
+  /* Shape */
+  --radius: 0.125rem;               /* 2px: near-square, editorial */
+
+  /* Surfaces (oklch is the source of truth; hex is approximate) */
+  --bg: oklch(0.08 0 0);            /* ~#020202 page */
+  --surface: oklch(0.155 0 0);      /* ~#0C0C0C card bands (used at 40% opacity) */
+  --border: oklch(0.25 0 0);        /* ~#222222 hairlines */
+
+  /* Text */
+  --fg: oklch(0.955 0.004 70);      /* ~#F1EEEA warm off-white */
+  --fg-muted: oklch(0.64 0.006 286);/* ~#8E8E93 nav, captions */
+
+  /* Metals */
+  --chrome: oklch(0.84 0.007 250);  /* ~#CBCED2 */
+  --silver: oklch(0.62 0.006 286);  /* ~#868689 */
+
+  /* Reds: the only accent family */
+  --blood: oklch(0.5 0.19 25);      /* ~#B0161F borders, glow */
+  --crimson: oklch(0.58 0.235 28);  /* ~#E3302F accent text, eyebrows */
+  --burgundy: oklch(0.21 0.07 20);  /* ~#3A0A10 hover fill */
+
+  /* Chrome text gradient: the signature effect */
+  --chrome-text: linear-gradient(
+    180deg,
+    oklch(0.98 0 0) 0%,
+    oklch(0.84 0.007 250) 40%,
+    oklch(0.45 0.005 250) 55%,
+    oklch(0.9 0.005 250) 75%,
+    oklch(0.6 0.005 250) 100%
+  );
+  --glow: radial-gradient(ellipse at center, var(--blood), transparent 65%);
+
+  /* Feedback (scanner states live in their own file, not this palette) */
+  --destructive: oklch(0.704 0.191 22.216);
+
+  /* Layout */
+  --section-y: 5rem;                /* py-20 on mobile */
+  --section-y-md: 7rem;             /* py-28 on desktop */
+  --gutter: 1.25rem;                /* px-5 mobile */
+  --gutter-md: 2.5rem;              /* px-10 desktop */
+  --max-w: 80rem;                   /* max-w-7xl */
+}
+
+/* ---- Base ---------------------------------------------------------------- */
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-manrope), sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Film grain: tiny tiled SVG, fixed overlay, never blocks taps */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---- Type system ---------------------------------------------------------- */
+.display {                           /* Bebas Neue, huge, tight */
+  font-family: var(--font-bebas), sans-serif;
+  font-size: clamp(4.5rem, 15vw, 12rem);
+  letter-spacing: -0.025em;
+  line-height: 0.82;
+}
+.chrome-text {
+  background-image: var(--chrome-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.accent-serif {                      /* the one italic crimson word, offset right */
+  font-family: var(--font-cormorant), serif;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--crimson);
+  font-size: clamp(3.5rem, 11vw, 9rem);
+  padding-left: 8vw;
+}
+h2, h3 { font-family: var(--font-cormorant), serif; font-weight: 400; }
+.eyebrow {                           /* tiny tracked label */
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  color: var(--crimson);
+}
+.nav-link {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--fg-muted);
+}
+
+/* ---- Buttons --------------------------------------------------------------- */
+.btn-outline {                       /* secondary / nav CTA */
+  border: 1px solid var(--blood);
+  padding: 0.5rem 1rem;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--fg);
+  border-radius: var(--radius);
+  transition: background-color 0.15s, color 0.15s;
+}
+.btn-outline:hover { background: var(--burgundy); }
+
+/* ---- Imagery ----------------------------------------------------------------
+   Photos sit on near-black with a red glow behind subject. Grid cells use
+   object-fit: cover; hover (desktop only) scales 1.05 + brightness 1.1 over
+   700ms. Hairline borders between sections; bands use var(--surface) at 40%. */
+.photo { overflow: hidden; }
+.photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s, filter 0.7s; }
+@media (hover: hover) {
+  .photo:hover img { transform: scale(1.05); filter: brightness(1.1); }
+}
+.band { border-block: 1px solid var(--border); background: color-mix(in oklch, var(--surface) 40%, transparent); }
+
+/* ---- Trust-critical screens (checkout, ticket, policies, scanner) ---------------
+   Drop the theatre here: Manrope 16px+, --fg on --bg, no chrome-text, no grain
+   animation, 12px minimum for any price/date/refund text, real contrast.
+   Drama on the landing page, calm where money and entry happen. */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

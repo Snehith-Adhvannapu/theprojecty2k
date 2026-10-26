@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx -e \"import('./lib/db').then(async m=>{await m.getDb();console.log('migrated');process.exit(0)})\"",
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.12",

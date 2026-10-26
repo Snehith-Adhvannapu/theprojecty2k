@@ -126,6 +126,7 @@ async function applyRefund(q: Q, ev: Extract<PaymentEvent, { kind: "refunded" }>
 
 // ---- Backup path: ask the gateway ourselves ------------------------------------
 const lastSync = new Map<string, number>();
+export const clearSyncThrottle = (orderId: string) => void lastSync.delete(orderId);
 
 export async function syncOrderPayment(orderId: string): Promise<ApplyResult | null> {
   const now = Date.now();

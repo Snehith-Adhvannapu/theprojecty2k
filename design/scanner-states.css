@@ -1,0 +1,14 @@
+/* Scanner feedback colors. Deliberately separate from the brand palette (see tokens.css):
+   these are fixed, unmistakable, and must never be reused for brand or decoration.
+   Values come from design/reference/Scanner.dc.html. Amber is never red or green. */
+:root {
+  --state-admit-bg: #0a7a3d;
+  --state-admit-fg: #ffffff;
+  --state-reject-bg: #a50e14;
+  --state-reject-fg: #ffffff;
+  --state-offline-bg: #f5a623; /* no connection: NOT admitted, NOT rejected */
+  --state-offline-fg: #1a1200;
+  --state-local-bg: #1d4ed8;   /* admitted in offline local mode */
+  --state-local-fg: #ffffff;
+  --state-online-dot: #3ddc84;
+}

@@ -66,12 +66,12 @@ export async function applyMigrations(db: Db, dir = path.join(process.cwd(), "dr
   await db.query(
     "CREATE TABLE IF NOT EXISTS _migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())",
   );
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
+  const files = fs.readdirSync(/*turbopackIgnore: true*/ dir).filter((f) => f.endsWith(".sql")).sort();
   for (const f of files) {
     const done = await db.query("SELECT 1 FROM _migrations WHERE name = $1", [f]);
     if (done.length) continue;
     const statements = fs
-      .readFileSync(path.join(dir, f), "utf8")
+      .readFileSync(/*turbopackIgnore: true*/ path.join(dir, f), "utf8")
       .split("--> statement-breakpoint")
       .map((s) => s.trim())
       .filter(Boolean);

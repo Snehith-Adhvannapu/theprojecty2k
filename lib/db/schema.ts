@@ -4,6 +4,8 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  customType,
+  uniqueIndex,
   check,
   index,
   integer,
@@ -48,12 +50,14 @@ export const passTypes = pgTable(
   ],
 );
 
+const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
+
 export const orders = pgTable(
   "orders",
   {
     id: id(),
     eventId: uuid("event_id").notNull().references(() => events.id),
-    // pending | paid | failed | needs_refund | refunded  (expiry is read-time, never a status)
+    // pending | awaiting_review | paid | rejected | needs_refund | refunded  (expiry is read-time, never a status)
     status: text("status").notNull().default("pending"),
     buyerName: text("buyer_name").notNull(),
     buyerPhone: text("buyer_phone").notNull(),
@@ -65,8 +69,18 @@ export const orders = pgTable(
     expiresAt: ts("expires_at").notNull(),
     paidAt: ts("paid_at"),
     createdAt: ts("created_at").notNull().defaultNow(),
+    // Manual UPI verification: the buyer submits a UTR + screenshot, an admin approves.
+    utr: text("utr"),
+    proofUrl: text("proof_url"),
+    proofData: bytea("proof_data"),
+    proofMime: text("proof_mime"),
+    submittedAt: ts("submitted_at"),
+    reviewedBy: uuid("reviewed_by"),
+    reviewedAt: ts("reviewed_at"),
+    reviewNote: text("review_note"),
   },
   (t) => [
+    uniqueIndex("orders_utr_unique").on(t.utr).where(sql`${t.utr} is not null and ${t.status} <> 'rejected'`),
     index("orders_phone_idx").on(t.buyerPhone),
     index("orders_email_idx").on(t.buyerEmail),
     index("orders_status_expires_idx").on(t.status, t.expiresAt),

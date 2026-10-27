@@ -30,13 +30,18 @@ async function main() {
   }
 
   const staff: [string, string, string, string | undefined][] = [
-    ["admin@y2k.local", "Admin One", "admin", process.env.SEED_ADMIN_PASSWORD],
-    ["admin2@y2k.local", "Admin Two", "admin", process.env.SEED_ADMIN_PASSWORD],
-    ["volunteer@y2k.local", "Volunteer One", "volunteer", process.env.SEED_VOLUNTEER_PASSWORD],
+    ["admin@y2k.local", "Admin One", "admin", process.env.SEED_ADMIN_PASSWORD || "Y2K-Admin-2026!"],
+    ["admin2@y2k.local", "Admin Two", "admin", process.env.SEED_ADMIN_PASSWORD || "Y2K-Admin-2026!"],
+    ["volunteer@y2k.local", "Volunteer One", "volunteer", process.env.SEED_VOLUNTEER_PASSWORD || "Y2K-Volunteer-2026!"],
   ];
   for (const [email, name, role, pw] of staff) {
-    if ((await db.query("SELECT 1 FROM staff_users WHERE email = $1", [email])).length) continue;
+    const exists = (await db.query("SELECT 1 FROM staff_users WHERE email = $1", [email])).length > 0;
     const password = pw || crypto.randomBytes(9).toString("base64url");
+    if (exists) {
+      // SEED_RESET=1 forces the known dev passwords back onto existing accounts. Never use on production.
+      if (process.env.SEED_RESET === "1") await db.query("UPDATE staff_users SET password_hash=$1, active=true WHERE email=$2", [hashPassword(password), email]);
+      continue;
+    }
     await db.query("INSERT INTO staff_users (email, name, role, password_hash) VALUES ($1,$2,$3,$4)", [
       email, name, role, hashPassword(password),
     ]);

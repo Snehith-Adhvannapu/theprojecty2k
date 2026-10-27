@@ -10,7 +10,7 @@ export default function Privacy() {
       <ul>
         <li><strong>What we collect:</strong> your name, phone number, email address, Instagram handle (optional), order and payment status, and entry check-in records.</li>
         <li><strong>Why:</strong> to sell you a ticket, deliver it, verify entry, contact you about the event, and handle refunds and support.</li>
-        <li><strong>Payments:</strong> handled by Razorpay. We never see or store your card, UPI PIN, or bank details.</li>
+        <li><strong>Payments:</strong> made by UPI from your own app. We never see your UPI PIN or bank login. We store the UTR and the payment screenshot you upload, only to verify your payment.</li>
         <li><strong>Who sees it:</strong> the organisers and authorised entry staff (who see only what they need to admit you). Our service providers (hosting, database, email, payments) process data on our behalf. We do not sell your data.</li>
         <li><strong>QR codes:</strong> your ticket QR contains a random code only, no personal information.</li>
         <li><strong>Marketing:</strong> we may message you about future events. Email {e.organiser.email} to opt out.</li>

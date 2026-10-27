@@ -151,7 +151,9 @@ export async function syncOrderPayment(orderId: string): Promise<ApplyResult | n
 
 // ---- Polling endpoint's brain ---------------------------------------------------
 export interface OrderStatusView {
-  status: "pending" | "paid" | "expired" | "needs_refund" | "refunded";
+  status: "pending" | "awaiting_review" | "rejected" | "paid" | "expired" | "needs_refund" | "refunded";
+  /** why a payment was sent back (pending again) or rejected */
+  reviewNote: string | null;
   expiresAt: string;
   amountPaise: number;
   tickets: TicketView[];
@@ -161,7 +163,7 @@ export interface OrderStatusView {
 
 export async function getOrderStatus(orderId: string): Promise<OrderStatusView | null> {
   const load = async () =>
-    (await query("SELECT id, status, amount_paise, expires_at, created_at, expires_at <= now() AS expired FROM orders WHERE id = $1", [orderId]))[0];
+    (await query("SELECT id, status, amount_paise, expires_at, created_at, review_note, expires_at <= now() AS expired FROM orders WHERE id = $1", [orderId]))[0];
   let o = await load();
   if (!o) return null;
   let checking = false;
@@ -182,6 +184,7 @@ export async function getOrderStatus(orderId: string): Promise<OrderStatusView |
     status,
     expiresAt: new Date(o.expires_at).toISOString(),
     amountPaise: o.amount_paise,
+    reviewNote: o.review_note ?? null,
     tickets: status === "paid" ? await ticketsForOrder({ query }, orderId) : [],
     checkingWithGateway: checking && status === "pending",
   };

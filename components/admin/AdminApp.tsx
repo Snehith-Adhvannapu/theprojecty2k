@@ -4,15 +4,16 @@ import { Logo } from "@/components/Logo";
 import { paise } from "@/lib/normalize";
 import { formatFullIST, formatTimeIST } from "@/lib/time";
 import { api } from "./api";
+import { Payments } from "./Payments";
 
-const TABS = ["Overview", "Guests", "Passes", "Volunteers", "Check-ins", "Tools"] as const;
+const TABS = ["Overview", "Payments", "Guests", "Passes", "Volunteers", "Check-ins", "Tools"] as const;
 type Tab = (typeof TABS)[number];
 
 interface Summary {
   counts: { sold: number; capacity: number; held: number; left: number; comps: number; checked_in_tickets: number; checked_in_people: number; people_expected: number };
   money: { gross: number; refunds: number; fees: number; net: number };
   needsRefund: { id: string; buyer_name: string; amount_paise: number }[];
-  health: { pending_orders: number; failed_emails: number; pending_emails: number; lastWebhook: string | null; fakePayments: boolean };
+  health: { pending_orders: number; awaiting_review: number; failed_emails: number; pending_emails: number; lastWebhook: string | null; fakePayments: boolean };
 }
 interface Guest { id: string; shortCode: string; name: string; phone: string; email: string | null; instagram: string | null; passName: string; admits: number; status: string; source: string; orderId: string | null; usedAt: string | null; usedBy: string | null }
 interface Pass { id: string; name: string; description: string; pricePaise: number; feePaise: number; totalQty: number; admits: number; active: boolean; sort: number; sold: number; salesStart: string | null; salesEnd: string | null }
@@ -41,6 +42,7 @@ export function AdminApp({ name }: { name: string }) {
         </nav>
         <div className="slide-up mt-6" key={tab}>
           {tab === "Overview" && <Overview go={setTab} />}
+          {tab === "Payments" && <Payments />}
           {tab === "Guests" && <Guests />}
           {tab === "Passes" && <Passes />}
           {tab === "Volunteers" && <Volunteers />}
@@ -73,16 +75,13 @@ function Overview({ go }: { go: (t: Tab) => void }) {
   useEffect(() => { const t = setInterval(() => reload(), 20_000); return () => clearInterval(t); }, [reload]);
   if (err) return <Err m={err} />;
   if (!s) return <div className="skeleton h-64" aria-busy="true" />;
-  const attention = s.needsRefund.length + s.health.failed_emails;
+  const attention = s.needsRefund.length + s.health.failed_emails + s.health.awaiting_review;
   return (
     <div className="flex flex-col gap-3">
-      {s.health.fakePayments && (
-        <p role="status" className="rounded-sm border border-danger p-3 text-sm"><strong>Test payments are ON.</strong> Anyone can complete a fake payment. Add real Razorpay keys and remove ALLOW_FAKE_PAYMENTS before going live.</p>
-      )}
       {attention > 0 && (
         <section aria-label="Needs attention" className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-blood bg-[var(--selected)] px-5 py-4">
-          <p><strong className="font-semibold text-crimson">Needs attention:</strong> {s.needsRefund.length} paid orders need a refund · {s.health.failed_emails} failed emails</p>
-          <button className="btn btn-calm min-h-11 text-sm" onClick={() => go("Tools")}>Review</button>
+          <p><strong className="font-semibold text-crimson">Needs attention:</strong> {s.health.awaiting_review} payments to verify · {s.needsRefund.length} orders need a refund · {s.health.failed_emails} failed emails</p>
+          <button className="btn btn-calm min-h-11 text-sm" onClick={() => go(s.health.awaiting_review > 0 ? "Payments" : "Tools")}>Review</button>
         </section>
       )}
       <section aria-label="Counts" className="flex flex-wrap gap-3">
@@ -105,7 +104,7 @@ function Overview({ go }: { go: (t: Tab) => void }) {
           <ul className="mt-3 divide-y divide-line">
             {s.needsRefund.map((o) => <li key={o.id} className="flex justify-between gap-3 py-2.5 text-sm"><span>{o.buyer_name} · <span className="muted">{o.id.slice(0, 8)}</span></span><span className="tnum">{paise(o.amount_paise)}</span></li>)}
           </ul>
-          <p className="muted mt-3 text-[13px]">Refund in the Razorpay dashboard; the refund webhook marks the order refunded.</p>
+          <p className="muted mt-3 text-[13px]">Refund these buyers from your UPI app, then tell them on WhatsApp.</p>
         </section>
       )}
       <p className="muted text-[13px]">Last webhook: {s.health.lastWebhook ? formatFullIST(s.health.lastWebhook) : "none yet"} · Pending emails: {s.health.pending_emails}</p>
@@ -283,16 +282,10 @@ function Checkins() {
 function Tools() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState("");
-  const [rec, setRec] = useState<{ checked: number; recovered: number; errors: number; paidWithoutTickets: { id: string; buyer_name: string }[]; needsRefund: { id: string; buyer_name: string; amount_paise: number }[]; doubleCaptures: unknown[] } | null>(null);
   const passes = useLoad<Pass[]>("/api/admin/passes");
   const [c, setC] = useState({ passTypeId: "", name: "", phone: "", email: "", instagram: "", reason: "" });
   const [comp, setComp] = useState<{ shortCode: string; token: string } | null>(null);
 
-  async function reconcile() {
-    setBusy("rec"); setMsg("");
-    try { setRec(await api("/api/admin/reconcile", {})); } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); }
-    setBusy("");
-  }
   async function issue(e: React.FormEvent) {
     e.preventDefault(); setBusy("comp"); setMsg(""); setComp(null);
     try { setComp(await api("/api/admin/tickets/comp", { ...c, email: c.email || null, instagram: c.instagram || undefined, passTypeId: c.passTypeId || passes.data?.[0]?.id })); setMsg("Comp ticket issued and written to the audit log."); }
@@ -312,16 +305,6 @@ function Tools() {
           <a className={dl} href="/admin/print" target="_blank">Print guest list</a>
         </div>
         <p className="muted mt-4 text-[13px]">Exports contain full phone numbers and emails and are logged. Keep a copy on two admin phones before the event.</p>
-        <h2 className="mt-8 text-lg">Reconcile with gateway</h2>
-        <p className="muted mt-1 text-sm">Asks Razorpay about every unpaid order that has a payment attempt, and confirms any it already captured.</p>
-        <button className="btn btn-calm btn-quiet mt-3 min-h-12 px-4 text-sm" onClick={reconcile} disabled={busy === "rec"}>{busy === "rec" && <span className="spinner" aria-hidden="true" />}Run reconcile</button>
-        {rec && (
-          <div className="mt-4 rounded-sm border border-line p-4 text-sm" role="status">
-            <p>Checked {rec.checked} · recovered {rec.recovered} · errors {rec.errors}</p>
-            <p className="mt-1">Paid without tickets: {rec.paidWithoutTickets.length} · Needs refund: {rec.needsRefund.length} · Double captures: {rec.doubleCaptures.length}</p>
-            {rec.needsRefund.map((o) => <p key={o.id} className="muted mt-1">{o.buyer_name} · {paise(o.amount_paise)} · {o.id.slice(0, 8)}</p>)}
-          </div>
-        )}
       </div>
       <form onSubmit={issue} className="card-plain flex min-w-[320px] flex-1 flex-col gap-3 p-5">
         <h2 className="text-lg">Issue comp ticket</h2>

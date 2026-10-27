@@ -12,7 +12,7 @@ export default function Terms() {
         <li><strong>Entry.</strong> A valid ticket and government photo ID are required. Each ticket admits the number of people stated on it, once.</li>
         <li><strong>Right of admission.</strong> The organiser may refuse or remove anyone who breaches the rules, behaves unsafely, or cannot show valid ID, without refund.</li>
         <li><strong>Tickets.</strong> Tickets are issued only after payment is verified. Duplicated, altered, or resold-for-profit tickets may be cancelled without refund. Each QR code works once; whoever&apos;s code is scanned first is admitted.</li>
-        <li><strong>Prices and payment.</strong> All prices are in Indian Rupees (INR). Payments are processed by Razorpay. Any fee is shown before you pay.</li>
+        <li><strong>Prices and payment.</strong> All prices are in Indian Rupees (INR). You pay by UPI directly to the organiser and submit the UTR and a screenshot. A ticket is issued only after we verify the payment against our bank account. Any fee is shown before you pay.</li>
         <li><strong>Age and conduct.</strong> {e.ageLimit}. Attendees follow venue rules and the law.</li>
         <li><strong>Prohibited items.</strong> {e.rules.join("; ")}</li>
         <li><strong>Photography.</strong> By attending, you consent to being photographed or filmed for event promotion, unless you tell the crew at the door.</li>

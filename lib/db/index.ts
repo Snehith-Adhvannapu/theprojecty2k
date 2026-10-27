@@ -83,6 +83,9 @@ export async function applyMigrations(db: Db, dir = path.join(process.cwd(), "dr
 }
 
 export async function openDb(url = process.env.DATABASE_URL ?? ""): Promise<Db> {
+  if (!url && (process.env.VERCEL || process.env.NETLIFY)) {
+    throw new Error("DATABASE_URL is not set. Serverless hosts (Vercel, Netlify) have no persistent disk: add a hosted Postgres and set DATABASE_URL.");
+  }
   const db = url.startsWith("memory:")
     ? await makePglite(undefined)
     : url

@@ -17,7 +17,7 @@ export function TicketCard({ t, delay = 0 }: { t: TicketCardData; delay?: number
             <p className="muted text-[13px]">{t.passName}</p>
             <p className="mt-0.5 truncate text-lg font-semibold">{t.holderName}</p>
           </div>
-          <p className="font-display text-[56px] leading-[0.9] tracking-[0.02em]">ADMITS {t.admits}</p>
+          <p className="shrink-0 whitespace-nowrap text-right font-display leading-[0.9] tracking-[0.02em]"><span className="block text-[13px] tracking-[0.2em] text-muted">ADMITS</span><span className="text-[64px]">{t.admits}</span></p>
         </div>
         <p className="muted mt-3 text-[13px]">{e.venue.name} · Doors {e.doorsOpen}</p>
       </div>

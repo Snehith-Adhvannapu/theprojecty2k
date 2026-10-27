@@ -11,7 +11,7 @@ const AVAILABLE_SQL = `
     - COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id
                  WHERE oi.pass_type_id = p.id AND o.status = 'paid'), 0)
     - COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id
-                 WHERE oi.pass_type_id = p.id AND o.status = 'pending' AND o.expires_at > now()
+                 WHERE oi.pass_type_id = p.id AND o.status IN ('pending','awaiting_review') AND o.expires_at > now()
                    AND ($2::uuid IS NULL OR o.id <> $2::uuid)), 0)
     AS available
   FROM pass_types p WHERE p.id = $1`;
@@ -40,7 +40,7 @@ export async function listPublicPasses(): Promise<PublicPass[]> {
               - COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id
                            WHERE oi.pass_type_id = p.id AND o.status = 'paid'), 0)
               - COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id
-                           WHERE oi.pass_type_id = p.id AND o.status = 'pending' AND o.expires_at > now()), 0) AS available
+                           WHERE oi.pass_type_id = p.id AND o.status IN ('pending','awaiting_review') AND o.expires_at > now()), 0) AS available
        FROM pass_types p WHERE p.active = true ORDER BY p.sort, p.price_paise`,
   );
   return rows.map((r) => ({

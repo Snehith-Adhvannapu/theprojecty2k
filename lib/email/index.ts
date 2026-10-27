@@ -3,10 +3,10 @@
 // of truth, so a failed email never loses a ticket: rows stay in email_outbox and retry.
 import fs from "node:fs";
 import path from "node:path";
-import QRCode from "qrcode";
 import { eventConfig } from "@/config/event";
 import { query } from "@/lib/db";
 import { ticketsForOrder } from "@/lib/tickets";
+import { ticketPdf } from "@/lib/tickets/pdf";
 
 const MAX_ATTEMPTS = 5;
 const appUrl = () => (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
@@ -23,6 +23,8 @@ interface Mail {
 async function deliver(mail: Mail) {
   const key = process.env.EMAIL_API_KEY;
   if (!key) {
+    // Serverless filesystems are read-only: throwing keeps the outbox row pending for retry.
+    if ((process.env.VERCEL || process.env.NETLIFY)) throw new Error("EMAIL_API_KEY is not set");
     const dir = path.join(process.cwd(), ".data", "emails");
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${Date.now()}-${mail.to.replace(/[^a-z0-9]/gi, "_")}.html`);
@@ -57,8 +59,8 @@ async function ticketMail(orderId: string, to: string): Promise<Mail> {
   const tickets = await ticketsForOrder({ query }, orderId);
   const attachments = await Promise.all(
     tickets.map(async (t) => ({
-      filename: `${t.shortCode}.png`,
-      content: (await QRCode.toBuffer(t.token, { width: 480, margin: 2 })).toString("base64"),
+      filename: `${t.shortCode}.pdf`,
+      content: Buffer.from(await ticketPdf(t)).toString("base64"),
     })),
   );
   const blocks = tickets
@@ -69,7 +71,7 @@ async function ticketMail(orderId: string, to: string): Promise<Mail> {
 <a href="${appUrl()}/t/${t.token}" style="display:inline-block;background:#e3302f;color:#fff;text-decoration:none;padding:12px 18px;font-weight:700">Open ticket</a></div>`,
     )
     .join("");
-  const inner = `<p>You're in. Your QR code is attached and also on the ticket page. If your phone has no signal at the door, show the short code below.</p>
+  const inner = `<p>You're in. Your ticket PDF is attached and also on the ticket page. If your phone has no signal at the door, show the short code below.</p>
 ${blocks}
 <p style="font-size:14px;color:#cbced2">${esc(eventConfig.dateLabel)} · Doors ${esc(eventConfig.doorsOpen)}<br>${esc(eventConfig.venue.name)}, ${esc(eventConfig.venue.address)}<br>Carry a valid government photo ID.</p>`;
   const text = `Your ${eventConfig.name} ticket${tickets.length > 1 ? "s" : ""}:\n` +
@@ -77,8 +79,26 @@ ${blocks}
   return { to, subject: `Your ${eventConfig.name} ticket`, html: shell("Your ticket", inner), text, attachments };
 }
 
+function receivedMail(to: string): Mail {
+  const inner = `<p>We received your payment details. We check every payment against our bank account by hand, so this can take a little while. You'll get another email with your ticket as soon as it's confirmed.</p>
+<p>Nothing more is needed from you. Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>`;
+  return { to, subject: `${eventConfig.name}: payment received, verifying`, html: shell("We're verifying your payment", inner), text: "We received your payment details and are verifying them. You will get your ticket by email once it is confirmed." };
+}
+
+async function rejectedMail(orderId: string, to: string): Promise<Mail> {
+  const [o] = await query("SELECT status, review_note FROM orders WHERE id = $1", [orderId]);
+  const again = o?.status === "pending";
+  const link = `${appUrl()}/order/${orderId}`;
+  const inner = `<p>We couldn't confirm your payment: <strong>${esc(o?.review_note ?? "the details didn't match")}</strong>.</p>
+${again
+    ? `<p>You can fix it and submit again here:</p><p><a href="${link}" style="display:inline-block;background:#e3302f;color:#fff;text-decoration:none;padding:12px 18px;font-weight:700">Submit payment details</a></p>`
+    : "<p>This order is closed. If you were charged, WhatsApp us with your UTR and we will sort it out.</p>"}
+<p>Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>`;
+  return { to, subject: `${eventConfig.name}: we couldn't confirm your payment`, html: shell("Payment not confirmed", inner), text: `We couldn't confirm your payment: ${o?.review_note ?? ""}. ${again ? link : ""}` };
+}
+
 function refundMail(to: string): Mail {
-  const inner = `<p>We received your payment, but the pass sold out before it could be confirmed. You will get a full refund to your original payment method. Nothing more is needed from you.</p>
+  const inner = `<p>We received your payment, but the pass sold out before it could be confirmed. You will get a full refund to the account you paid from. Nothing more is needed from you.</p>
 <p>Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>`;
   return { to, subject: `${eventConfig.name}: refund on its way`, html: shell("Your payment will be refunded", inner), text: "Your payment was received after the pass sold out. A full refund will be issued." };
 }
@@ -93,7 +113,11 @@ export async function flushOutbox(orderId?: string): Promise<void> {
   );
   for (const r of rows) {
     try {
-      const mail = r.kind === "needs_refund" ? refundMail(r.to_email) : await ticketMail(r.order_id, r.to_email);
+      const mail =
+        r.kind === "needs_refund" ? refundMail(r.to_email)
+        : r.kind === "received" ? receivedMail(r.to_email)
+        : r.kind === "rejected" ? await rejectedMail(r.order_id, r.to_email)
+        : await ticketMail(r.order_id, r.to_email);
       await deliver(mail);
       await query("UPDATE email_outbox SET status = 'sent', sent_at = now(), attempts = attempts + 1, last_error = NULL WHERE id = $1", [r.id]);
     } catch (e) {

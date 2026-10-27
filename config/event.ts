@@ -28,7 +28,7 @@ export const eventConfig = {
     eventDayHelpline: "[NUMBER]",
   },
   policy: {
-    // Pick one and fill the blanks in the Refund page. Razorpay wants this stated plainly.
+    // Pick one and fill the blanks in the Refund page. State it plainly.
     refundPolicy: "[Tickets are non-refundable / refundable until DD Month 2026]",
     refundDays: "[X]",
     transferable: "[Yes / No]",
@@ -36,8 +36,14 @@ export const eventConfig = {
     dataRetention: "[X months]",
     governingCity: "[CITY, STATE]",
   },
+  // Manual UPI payment. Set NEXT_PUBLIC_UPI_ID / NEXT_PUBLIC_UPI_PAYEE in the host env, or edit here.
+  payment: {
+    upiId: process.env.NEXT_PUBLIC_UPI_ID || "[UPI ID]",
+    payeeName: process.env.NEXT_PUBLIC_UPI_PAYEE || "[PAYEE NAME]",
+    reviewHoldHours: 24,
+  },
   khelo: { name: "Khelo", url: "https://khel-o.com" },
-  limits: { maxPassesPerOrder: 4, holdMinutes: 10, maxPendingPerPhone: 2 },
+  limits: { maxPassesPerOrder: 4, holdMinutes: 45, maxPendingPerPhone: 2 },
 };
 
 export const isPlaceholder = (s: string) => /\[[^\]]+\]/.test(s);

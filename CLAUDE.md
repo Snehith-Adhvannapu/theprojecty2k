@@ -29,6 +29,9 @@ Single-event ticketing for one party on 15 Nov 2026, about 300 attendees. Not a 
 9. Never log tokens, full phone numbers, or secrets.
 10. No change to `lib/payments`, `lib/tickets`, `lib/inventory`, `lib/checkin` without tests, including concurrency tests (20 parallel reservations on 1 pass; 2 parallel scans of one token; same webhook 5 times).
 
+## Manual UPI mode (replaces Razorpay as of 2026-10-27, owner decision)
+Buyers pay by UPI, submit a 12-digit UTR + screenshot (Cloudinary via `CLOUDINARY_URL`, else DB). An admin approves in `/admin` Payments after checking the bank statement. Invariant 1 now reads: a ticket exists only after an admin approval (`lib/payments/manual.ts`). `payments.provider_payment_id` = UTR (unique); approval is idempotent and re-checks stock under the pass lock. Razorpay code stays in `lib/payments` but is unused.
+
 ## Layout
 ```
 app/                 routes only (page.tsx, checkout, t/[token], scan, admin/*, api/*)

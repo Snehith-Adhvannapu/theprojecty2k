@@ -17,7 +17,7 @@ export async function summary() {
     SELECT
       COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE o.status = 'paid'), 0)::int AS sold,
       COALESCE((SELECT SUM(total_qty) FROM pass_types WHERE active), 0)::int AS capacity,
-      COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE o.status = 'pending' AND o.expires_at > now()), 0)::int AS held,
+      COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE o.status IN ('pending','awaiting_review') AND o.expires_at > now()), 0)::int AS held,
       (SELECT count(*) FROM tickets WHERE source = 'comp' AND status <> 'revoked')::int AS comps,
       (SELECT count(*) FROM tickets WHERE status = 'used')::int AS checked_in_tickets,
       COALESCE((SELECT SUM(admits) FROM tickets WHERE status = 'used'), 0)::int AS checked_in_people,
@@ -32,6 +32,7 @@ export async function summary() {
   const [h] = await query(`
     SELECT
       (SELECT count(*) FROM orders WHERE status = 'pending' AND expires_at > now())::int AS pending_orders,
+      (SELECT count(*) FROM orders WHERE status = 'awaiting_review')::int AS awaiting_review,
       (SELECT count(*) FROM email_outbox WHERE status = 'failed')::int AS failed_emails,
       (SELECT count(*) FROM email_outbox WHERE status = 'pending')::int AS pending_emails,
       (SELECT max(received_at) FROM webhook_events) AS last_webhook`);

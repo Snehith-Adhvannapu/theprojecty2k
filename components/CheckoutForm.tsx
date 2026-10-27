@@ -9,27 +9,10 @@ interface Pass {
   id: string; name: string; description: string; pricePaise: number; feePaise: number;
   admits: number; available: number; onSale: boolean;
 }
-type Phase = "idle" | "starting" | "paying" | "error";
+type Phase = "idle" | "starting" | "error";
 type Fields = { name: string; phone: string; email: string; instagram: string };
 
 const STORE = "y2k:checkout";
-declare global {
-  interface Window {
-    Razorpay?: new (o: Record<string, unknown>) => { open(): void; on(ev: string, cb: () => void): void };
-  }
-}
-
-function loadRazorpay(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.Razorpay) return resolve();
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js"; // only loaded here, only when paying
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Could not load the payment window. Check your connection."));
-    document.body.appendChild(s);
-  });
-}
-
 async function post(url: string, body: unknown) {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const json = await res.json().catch(() => null);
@@ -47,7 +30,6 @@ export function CheckoutForm() {
   const [errs, setErrs] = useState<Partial<Record<keyof Fields | "accepted", string>>>({});
   const [phase, setPhase] = useState<Phase>("idle");
   const [message, setMessage] = useState("");
-  const [fake, setFake] = useState<{ orderId: string } | null>(null);
   const attempt = useRef({ key: crypto.randomUUID(), sig: "" });
   const maxPer = e.limits.maxPassesPerOrder;
 
@@ -75,7 +57,7 @@ export function CheckoutForm() {
     return { sub: pass.pricePaise * qty, fee: pass.feePaise * qty, total: (pass.pricePaise + pass.feePaise) * qty };
   }, [pass, qty]);
 
-  const busy = phase === "starting" || phase === "paying";
+  const busy = phase === "starting";
   const set = (k: keyof Fields) => (ev: React.ChangeEvent<HTMLInputElement>) => {
     setF((cur) => ({ ...cur, [k]: ev.target.value }));
     if (errs[k]) setErrs((x) => ({ ...x, [k]: undefined }));
@@ -110,46 +92,10 @@ export function CheckoutForm() {
         passTypeId: pass.id, qty, name: f.name, phone: f.phone, email: f.email,
         instagram: f.instagram || undefined, idempotencyKey: attempt.current.key, accepted: true,
       });
-      const init = await post("/api/payments/initiate", { orderId: order.id });
-      if (init.provider === "fake") {
-        setFake({ orderId: order.id });
-        setPhase("paying");
-        return;
-      }
-      await loadRazorpay();
-      const rz = new window.Razorpay!({
-        key: init.keyId, amount: init.amountPaise, currency: "INR", name: e.name,
-        description: `${pass.name} × ${qty}`, order_id: init.providerOrderId,
-        prefill: { name: f.name, email: normalizeEmail(f.email), contact: normalizePhone(f.phone) ?? "" },
-        theme: { color: "#b0161f" },
-        // The handler never confirms anything: it only moves to the page that polls the server.
-        handler: () => router.push(`/order/${order.id}`),
-        modal: { ondismiss: () => setPhase("idle") },
-      });
-      rz.on("payment.failed", () => {
-        setPhase("error");
-        setMessage("The payment didn't go through. You haven't been charged for a ticket. Try again or use another method.");
-      });
-      setPhase("paying");
-      rz.open();
+      router.push(`/order/${order.id}`);
     } catch (err) {
       setPhase("error");
       setMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
-    }
-  }
-
-  async function fakePay(outcome: "success" | "fail") {
-    if (!fake) return;
-    setPhase("starting");
-    try {
-      await post("/api/payments/fake", { orderId: fake.orderId, outcome });
-      if (outcome === "success") return router.push(`/order/${fake.orderId}`);
-      setFake(null);
-      setPhase("error");
-      setMessage("Test payment failed (as chosen). Try again.");
-    } catch (err) {
-      setPhase("error");
-      setMessage(err instanceof Error ? err.message : "Test payment failed.");
     }
   }
 
@@ -166,7 +112,7 @@ export function CheckoutForm() {
     );
   }
 
-  const label = phase === "starting" ? "Starting payment…" : phase === "paying" ? "Waiting for payment…" : phase === "error" ? `Try again · Pay ${paise(money.total)}` : `Pay ${paise(money.total)}`;
+  const label = phase === "starting" ? "Reserving your pass…" : phase === "error" ? `Try again · Continue ${paise(money.total)}` : `Continue to payment · ${paise(money.total)}`;
 
   return (
     <div className="slide-up">
@@ -200,7 +146,7 @@ export function CheckoutForm() {
             <div className="flex flex-col gap-1.5">
               <label htmlFor="f-phone" className="text-sm font-medium">Phone number</label>
               <div className="flex gap-2">
-                <span className="field flex w-auto items-center text-muted">+91</span>
+                <span className="field flex !w-16 shrink-0 items-center justify-center text-muted">+91</span>
                 <input id="f-phone" className="field min-w-0 flex-1" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="10-digit mobile"
                   value={f.phone} onChange={set("phone")} disabled={busy} aria-invalid={!!errs.phone} aria-describedby="phone-help" />
               </div>
@@ -242,28 +188,11 @@ export function CheckoutForm() {
           {busy && <span className="spinner" aria-hidden="true" />}
           {label}
         </button>
-        <p className="muted mt-3 text-center text-[13px]">Secured by Razorpay. We never see your card or UPI PIN. All prices in INR.</p>
+        <p className="muted mt-3 text-center text-[13px]">Next: pay by UPI, then upload your payment proof. All prices in INR.</p>
       </form>
 
-      {fake && (
-        <div role="dialog" aria-modal="true" aria-label="Test payment" className="fixed inset-0 z-40 flex items-end justify-center bg-bg/80 p-4 sm:items-center">
-          <div className="card slide-up w-full max-w-[420px] p-6">
-            <p className="label text-crimson">Test mode</p>
-            <p className="mt-2 text-xl font-semibold">Pay {paise(money.total)}</p>
-            <p className="muted mt-2 text-sm">No real money moves. This stands in for the Razorpay window until your keys are added.</p>
-            <div className="mt-5 flex flex-col gap-3">
-              <button className="btn btn-primary btn-calm btn-block" disabled={busy} onClick={() => fakePay("success")}>
-                {busy && <span className="spinner" aria-hidden="true" />}Simulate successful payment
-              </button>
-              <button className="btn btn-quiet btn-calm btn-block" disabled={busy} onClick={() => fakePay("fail")}>Simulate failed payment</button>
-              <button className="btn btn-quiet btn-calm btn-block" disabled={busy} onClick={() => { setFake(null); setPhase("idle"); }}>Close without paying</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="muted mt-7 border-t border-line pt-5 text-sm">
-        <p><span className="text-fg">What happens next.</span> Pay, and your ticket appears on the next screen once payment is confirmed. A copy is emailed. Paid but nothing showed up? WhatsApp {e.organiser.whatsapp}.</p>
+        <p><span className="text-fg">What happens next.</span> You pay by UPI and send us the UTR and a screenshot. We verify it by hand, then email your ticket as a PDF. Need help? WhatsApp {e.organiser.whatsapp}.</p>
       </div>
     </div>
   );

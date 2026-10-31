@@ -1,5 +1,5 @@
 // npm run seed. Safe to re-run: only fills what is missing.
-// Seed data is placeholder-only (names say so, prices are ₹1). Edit everything in /admin.
+// Pass quantities are provisional. Edit everything in /admin.
 import { loadEnvConfig } from "@next/env";
 import crypto from "node:crypto";
 
@@ -15,10 +15,13 @@ async function main() {
     const [e] = await db.query(
       "INSERT INTO events (name, starts_at, max_per_order) VALUES ('Project Y2K', '2026-11-15T00:00:00+05:30', 4) RETURNING id",
     );
+    // Quantities are provisional: set the real numbers in /admin > Passes before sales open.
+    const DESC = "The Matrix: Hyderabad's first theatre rave.";
     const passes: [string, string, number, number, number][] = [
-      ["General Entry [EDIT IN ADMIN]", "[PASS DESCRIPTION]", 100, 100, 1],
-      ["Couple Pass [EDIT IN ADMIN]", "[PASS DESCRIPTION] One QR, admits 2.", 100, 50, 2],
-      ["VIP [EDIT IN ADMIN]", "[PASS DESCRIPTION]", 100, 20, 1],
+      ["Early Bird Pass", DESC, 139900, 100, 1],
+      ["General Pass", DESC, 159900, 100, 1],
+      ["Couple Pass", DESC + " One QR, admits 2.", 279900, 50, 2],
+      ["Backstage Pass", DESC, 249900, 50, 1],
     ];
     for (const [i, [name, desc, price, qty, admits]] of passes.entries()) {
       await db.query(
@@ -26,7 +29,7 @@ async function main() {
         [e.id, name, desc, price, qty, admits, i],
       );
     }
-    console.log("seeded event + 3 placeholder passes");
+    console.log("seeded event + 4 passes (check quantities in /admin)");
   }
 
   const staff: [string, string, string, string | undefined][] = [

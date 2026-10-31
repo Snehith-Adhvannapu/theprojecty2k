@@ -132,8 +132,9 @@ export default function Home() {
           {[
             ["Date", e.dateLabel, "flex-[1_1_160px]"],
             ["Doors", e.doorsOpen, "flex-[1_1_160px]"],
+            ["Music", `${e.musicFrom} to ${e.musicUntil}`, "flex-[1_1_160px]"],
             ["Venue", `${e.venue.name}, ${e.venue.address}`, "flex-[2_1_240px]"],
-            ["Age", `${e.ageLimit} + ID`, "flex-[1_1_160px]"],
+            ["Age", e.ageLimit, "flex-[1_1_160px]"],
             ["Dress", e.dressCode, "flex-[1_1_160px]"],
           ].map(([k, v, c]) => (
             <div key={k} className={c}>

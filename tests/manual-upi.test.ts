@@ -156,3 +156,26 @@ describe("ticket pdf", () => {
     expect(Buffer.from(bytes.subarray(0, 5)).toString()).toBe("%PDF-");
   });
 });
+
+describe("changing a rejection to approved (buyer confirmed by phone)", () => {
+  it("issues the ticket, shows as reversible in the queue, and is idempotent", async () => {
+    const pass = await makePass(ctx.eventId, 2);
+    const { o } = await submitted(pass);
+    await rejectOrder(o.id, ctx.staffId, "Could not find the payment", false);
+    const q = await reviewQueue();
+    expect(q.reviewed.find((r) => r.id === o.id)?.canReverse).toBe(true);
+    expect((await approveOrder(o.id, ctx.staffId)).result).toBe("approved");
+    expect((await getOrderStatus(o.id))?.status).toBe("paid");
+    expect((await approveOrder(o.id, ctx.staffId)).result).toBe("already_approved");
+    const [{ n }] = await query("SELECT count(*)::int AS n FROM tickets WHERE order_id = $1", [o.id]);
+    expect(n).toBe(1);
+  });
+
+  it("goes to needs_refund when the stock was taken after the rejection", async () => {
+    const pass = await makePass(ctx.eventId, 1);
+    const { o } = await submitted(pass);
+    await rejectOrder(o.id, ctx.staffId, "Could not find the payment", false);
+    await submitted(pass); // someone else takes the freed pass
+    expect((await approveOrder(o.id, ctx.staffId)).result).toBe("needs_refund");
+  });
+});

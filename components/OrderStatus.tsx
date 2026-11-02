@@ -109,7 +109,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
         </ol>
         <p className="muted mt-4 text-sm">Order reference <span className="tnum text-fg">{ref}</span> · {paise(s.amountPaise)}</p>
         {offline && <p className="mt-3 text-sm text-danger">You seem to be offline. Reconnecting…</p>}
-        <KheloQuest lead="While you wait, " className="mt-6" />
+        <KheloQuest className="mt-6" />
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link href="/find-ticket" className="btn btn-calm btn-quiet min-h-12 flex-1">My tickets</Link>
           {whatsapp ? <a href={whatsapp} className="btn btn-calm btn-quiet min-h-12 flex-1">Taking long? WhatsApp us</a> : <p className="muted self-center text-sm">Taking long? WhatsApp {e.organiser.whatsapp}</p>}

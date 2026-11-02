@@ -20,18 +20,15 @@ export function KheloStrip() {
   );
 }
 
-/** The ask: gamers join the Khelo WhatsApp community. `lead` changes the first line of the copy. */
-export function KheloQuest({ lead = "", className = "" }: { lead?: string; className?: string }) {
+/** The ask: gamers join the Khelo community. Short on purpose. */
+export function KheloQuest({ className = "" }: { className?: string }) {
   return (
-    <aside className={`quest ${className}`} aria-label="Join the Khelo gaming community on WhatsApp">
+    <aside className={`quest ${className}`} aria-label="Join the Khelo gamers community">
       <div className="min-w-0 flex-1 p-5">
-        <p className="eyebrow !text-[11px]">Side quest <span className="muted">· Gamers only</span></p>
+        <p className="eyebrow !text-[11px]">Gamers only</p>
         <p className="quest-h mt-2.5">Gamer?<br />Join the squad.</p>
-        <p className="muted mt-3 text-[15px] leading-relaxed">
-          {lead ? `${lead}we` : "We"} host free gaming tournaments. Join the Khelo WhatsApp community for gamers and sports lovers, see photos from the last one, and find people to play with.
-        </p>
-        <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary btn-calm btn-block mt-4">Join on WhatsApp <span aria-hidden="true">→</span></a>
-        <p className="muted mt-3 text-[13px]">Only for gamers. Not into gaming? Skip this, nothing else changes.</p>
+        <p className="muted mt-3 text-[15px] leading-relaxed">Khelo helps you find the best gaming cafés and snooker hubs around you in Hyderabad. We host tournaments, so join.</p>
+        <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary btn-calm btn-block mt-4">Join the gamers community <span aria-hidden="true">→</span></a>
       </div>
       <div className="quest-tear" aria-hidden="true" />
       <div className="quest-side" aria-hidden="true"><Mark size={22} /><span>KHEL-O</span></div>
@@ -46,10 +43,10 @@ export function KheloPartner() {
         <div className="max-w-[60ch]">
           <p className="eyebrow">Ticketing &amp; community partner</p>
           <p className="mt-3 flex items-center gap-3 font-display text-[54px] leading-none tracking-[0.06em]"><Mark size={44} />KHEL-O</p>
-          <p className="muted mt-3">Book gaming cafés, snooker and bowling in Hyderabad. Khelo hosts free gaming tournaments and runs a WhatsApp community for gamers and sports lovers.</p>
+          <p className="muted mt-3">Khelo helps you find the best gaming cafés and snooker hubs around you in Hyderabad. We host tournaments, so join.</p>
         </div>
         <div className="mt-5 flex flex-col gap-3 md:mt-0 md:w-[300px] md:shrink-0">
-          <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary min-h-12 justify-center">Join the WhatsApp community</a>
+          <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary min-h-12 justify-center">Join the gamers community</a>
           <a href={khelo.url} rel="noopener" className="btn min-h-12 justify-center">Visit khel-o.com <span aria-hidden="true">→</span></a>
         </div>
       </div>

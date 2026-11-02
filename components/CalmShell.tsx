@@ -14,7 +14,7 @@ export function CalmShell({
           {back ? (
             <Link href={back.href} className="muted inline-flex min-h-11 items-center text-sm transition-colors hover:text-fg">← {back.label}</Link>
           ) : <span />}
-          <Logo plain className="!text-[28px]" />
+          <Logo />
           <span className="muted text-[13px]">{right}</span>
         </header>
         {children}

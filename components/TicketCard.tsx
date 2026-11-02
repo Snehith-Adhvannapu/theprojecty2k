@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { eventConfig as e } from "@/config/event";
 import { TicketQR } from "@/components/TicketQR";
 
@@ -11,7 +12,10 @@ export function TicketCard({ t, delay = 0 }: { t: TicketCardData; delay?: number
   return (
     <section aria-label="Your ticket" className="card slide-up overflow-hidden" style={{ "--i": delay } as React.CSSProperties}>
       <div className="px-5 pt-5 pb-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-crimson">Project Y2K · 15 Nov 2026</p>
+        <div className="flex items-center justify-between gap-3">
+          <Image src="/images/y2k26-logo-sm.webp" alt="Project Y2K26" width={240} height={185} style={{ height: 56, width: "auto" }} />
+          <p className="text-right text-xs uppercase tracking-[0.3em] text-crimson">15 Nov 2026</p>
+        </div>
         <div className="mt-3 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="muted text-[13px]">{t.passName}</p>

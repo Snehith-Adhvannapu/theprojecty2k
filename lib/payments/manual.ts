@@ -68,7 +68,9 @@ export async function approveOrder(orderId: string, staffId: string): Promise<Re
     const [o] = await q.query("SELECT * FROM orders WHERE id = $1 FOR UPDATE", [orderId]);
     if (!o) throw new AppError("NOT_FOUND", "Order not found.", 404);
     if (o.status === "paid") return { result: "already_approved" };
-    if (o.status !== "awaiting_review") throw new AppError("NOT_AWAITING", "This order isn't waiting for review.", 409);
+    // A rejection can be reversed (the buyer confirmed on a call). Needs the UTR that was on file.
+    const reversal = o.status === "rejected" && !!o.utr;
+    if (o.status !== "awaiting_review" && !reversal) throw new AppError("NOT_AWAITING", "This order isn't waiting for review.", 409);
 
     if (!(await lockOrderStock(q, orderId))) {
       await q.query("UPDATE orders SET status = 'needs_refund', reviewed_by = $2, reviewed_at = now() WHERE id = $1", [orderId, staffId]);
@@ -76,15 +78,20 @@ export async function approveOrder(orderId: string, staffId: string): Promise<Re
       await audit(q, "approve_no_stock_needs_refund", orderId, { staffId });
       return { result: "needs_refund" };
     }
-    await q.query(
-      `INSERT INTO payments (order_id, provider, provider_order_id, provider_payment_id, status, amount_paise, fee_paise, captured_at)
-       VALUES ($1::uuid,'upi_manual',$2::text,$3,'captured',$4,0,now())`,
-      [orderId, orderId, o.utr, o.amount_paise],
-    );
-    await q.query("UPDATE orders SET status = 'paid', paid_at = now(), reviewed_by = $2, reviewed_at = now() WHERE id = $1", [orderId, staffId]);
+    try {
+      await q.query(
+        `INSERT INTO payments (order_id, provider, provider_order_id, provider_payment_id, status, amount_paise, fee_paise, captured_at)
+         VALUES ($1::uuid,'upi_manual',$2::text,$3,'captured',$4,0,now())`,
+        [orderId, orderId, o.utr, o.amount_paise],
+      );
+      await q.query("UPDATE orders SET status = 'paid', paid_at = now(), review_note = NULL, reviewed_by = $2, reviewed_at = now() WHERE id = $1", [orderId, staffId]);
+    } catch (e) {
+      if (isUniqueViolation(e)) throw new AppError("UTR_IN_USE", "Another order already uses this UTR, so this one can't be approved.", 409);
+      throw e;
+    }
     await issueTicketsForOrder(q, orderId);
     await q.query("INSERT INTO email_outbox (order_id, to_email, kind) VALUES ($1,$2,'ticket')", [orderId, o.buyer_email]);
-    await audit(q, "payment_approved", orderId, { staffId, amountPaise: o.amount_paise });
+    await audit(q, reversal ? "rejection_reversed_approved" : "payment_approved", orderId, { staffId, amountPaise: o.amount_paise });
     return { result: "approved" };
   });
 }
@@ -116,6 +123,8 @@ export interface ReviewRow {
   id: string; status: string; buyerName: string; buyerPhone: string; buyerEmail: string;
   items: string; amountPaise: number; utr: string | null; submittedAt: string | null;
   reviewNote: string | null; hasProof: boolean; ticketToken: string | null;
+  /** a final rejection that can still be turned into an approval */
+  canReverse: boolean;
 }
 
 export async function reviewQueue(): Promise<{ pending: ReviewRow[]; reviewed: ReviewRow[] }> {
@@ -124,7 +133,9 @@ export async function reviewQueue(): Promise<{ pending: ReviewRow[]; reviewed: R
             (o.proof_url IS NOT NULL OR o.proof_data IS NOT NULL) AS has_proof,
             (SELECT string_agg(p.name || ' x' || oi.qty, ', ') FROM order_items oi JOIN pass_types p ON p.id = oi.pass_type_id WHERE oi.order_id = o.id) AS items
        FROM orders o
-      WHERE o.status = 'awaiting_review' OR (o.submitted_at IS NOT NULL AND o.status IN ('paid','rejected','needs_refund'))
+      WHERE o.status = 'awaiting_review'
+         OR (o.submitted_at IS NOT NULL AND o.status IN ('paid','rejected','needs_refund'))
+         OR (o.status = 'pending' AND o.review_note IS NOT NULL AND o.expires_at > now())
       ORDER BY o.submitted_at ASC`,
   );
   const out: ReviewRow[] = [];
@@ -133,6 +144,7 @@ export async function reviewQueue(): Promise<{ pending: ReviewRow[]; reviewed: R
       id: r.id, status: r.status, buyerName: r.buyer_name, buyerPhone: r.buyer_phone, buyerEmail: r.buyer_email,
       items: r.items ?? "", amountPaise: r.amount_paise, utr: r.utr, hasProof: r.has_proof,
       submittedAt: r.submitted_at ? new Date(r.submitted_at).toISOString() : null, reviewNote: r.review_note,
+      canReverse: r.status === "rejected" && !!r.utr,
       ticketToken: r.status === "paid" ? ((await ticketsForOrder({ query }, r.id))[0]?.token ?? null) : null,
     });
   }

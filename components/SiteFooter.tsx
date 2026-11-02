@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { eventConfig as e } from "@/config/event";
+import { Logo } from "@/components/Logo";
 
 export function SiteFooter() {
   return (
     <footer className="border-t border-line bg-band">
       <div className="wrap flex flex-wrap justify-between gap-x-16 gap-y-8 py-12">
         <div className="min-w-60 flex-1">
-          <p className="font-display text-[32px] leading-none tracking-[0.04em]">Project Y2K</p>
+          <Logo size={84} className="-ml-1" />
           <p className="muted mt-3 text-sm leading-relaxed">
             WhatsApp {e.organiser.whatsapp}
             <br />

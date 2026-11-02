@@ -1,14 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 
-/** Chrome wordmark. Hero-adjacent only; trust screens use `plain`. */
-export function Logo({ plain = false, className = "" }: { plain?: boolean; className?: string }) {
+/** The Project Y2K26 logo. Replaces the text wordmark everywhere (header, footer, admin). */
+export function Logo({ className = "", size = 44 }: { plain?: boolean; className?: string; size?: number }) {
   return (
-    <Link
-      href="/"
-      aria-label="Project Y2K, home"
-      className={`inline-flex min-h-11 items-center font-display text-[34px] leading-none tracking-[0.04em] ${plain ? "text-fg" : "chrome-text"} ${className}`}
-    >
-      Y2K
+    <Link href="/" aria-label="Project Y2K26, home" className={`inline-flex min-h-11 items-center ${className}`}>
+      <Image src="/images/y2k26-logo-sm.webp" alt="Project Y2K26" width={240} height={185} priority style={{ height: size, width: "auto" }} />
     </Link>
   );
 }

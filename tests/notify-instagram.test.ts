@@ -38,31 +38,27 @@ describe("admin alert when a payment is submitted", () => {
     await expect(notifyNewPayment(o.id)).resolves.toBeUndefined();
   });
 
-  it("sends Telegram and WhatsApp (CallMeBot) with amount and UTR tail only: no phone, no token, no full UTR", async () => {
-    vi.stubEnv("TELEGRAM_BOT_TOKEN", "bot123");
-    vi.stubEnv("TELEGRAM_CHAT_ID", "42");
-    vi.stubEnv("CALLMEBOT_PHONE", "+910000000000");
-    vi.stubEnv("CALLMEBOT_APIKEY", "k");
-    const calls: string[] = [];
-    vi.stubGlobal("fetch", vi.fn(async (url: unknown, init?: { body?: string }) => { calls.push(String(url) + " " + (init?.body ?? "")); return new Response("{}", { status: 200 }); }));
+  it("emails the organiser a deep link with amount and UTR tail only: no phone, no full UTR", async () => {
+    vi.stubEnv("EMAIL_API_KEY", "re_test");
+    vi.stubEnv("EMAIL_FROM", "Y2K <t@example.com>");
+    vi.stubEnv("ADMIN_NOTIFY_EMAIL", "boss@example.com");
+    vi.stubEnv("APP_URL", "https://www.example.com");
+    const bodies: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (_u: unknown, init?: { body?: string }) => { bodies.push(init?.body ?? ""); return new Response("{}", { status: 200 }); }));
     const pass = await makePass(ctx.eventId, 5);
     const o = await order(pass, 1);
     await submitProof(o.id, "123456789012", PNG);
     await notifyNewPayment(o.id);
-    const tg = calls.find((c) => c.includes("api.telegram.org"));
-    const wa = calls.find((c) => c.includes("callmebot"));
-    expect(tg).toBeTruthy();
-    expect(wa).toBeTruthy();
-    for (const c of [tg!, wa!]) {
-      expect(c).toContain("9012"); // UTR tail
-      expect(c).not.toContain("123456789012"); // never the full UTR
-      expect(c).not.toMatch(/9000\d{6}/); // the buyer's phone (test buyers are +919000...) is never sent
-    }
+    const mail = bodies.find((b) => b.includes("boss@example.com"));
+    expect(mail).toBeTruthy();
+    expect(mail).toContain(`https://www.example.com/admin?tab=payments&order=${o.id}`);
+    expect(mail).toContain("9012");
+    expect(mail).not.toContain("123456789012");
+    expect(mail).not.toMatch(/9000\d{6}/);
   });
 
-  it("a failing channel does not break the others or the caller", async () => {
-    vi.stubEnv("TELEGRAM_BOT_TOKEN", "bot123");
-    vi.stubEnv("TELEGRAM_CHAT_ID", "42");
+  it("a failing email does not break the caller", async () => {
+    vi.stubEnv("EMAIL_API_KEY", "re_test");
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("network down"); }));
     const pass = await makePass(ctx.eventId, 5);
     const o = await order(pass, 1);

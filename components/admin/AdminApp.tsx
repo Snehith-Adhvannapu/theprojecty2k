@@ -18,14 +18,14 @@ interface Summary {
 interface Guest { id: string; shortCode: string; name: string; phone: string; email: string | null; instagram: string | null; passName: string; admits: number; status: string; source: string; orderId: string | null; usedAt: string | null; usedBy: string | null }
 interface Pass { id: string; name: string; description: string; pricePaise: number; feePaise: number; totalQty: number; admits: number; active: boolean; sort: number; sold: number; held?: number; salesStart: string | null; salesEnd: string | null }
 
-export function AdminApp({ name }: { name: string }) {
-  const [tab, setTab] = useState<Tab>("Overview");
+export function AdminApp({ name, initialTab, focusOrder }: { name: string; initialTab?: Tab; focusOrder?: string }) {
+  const [tab, setTab] = useState<Tab>(initialTab ?? "Overview");
   return (
     <div className="calm min-h-dvh text-[15px]">
       <div className="wrap pb-12">
         <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-line py-2">
           <div className="flex items-center gap-4">
-            <Logo plain className="!text-[28px]" />
+            <Logo size={40} />
             <span className="label">Admin</span>
           </div>
           <div className="muted flex items-center gap-4 text-sm">
@@ -42,7 +42,7 @@ export function AdminApp({ name }: { name: string }) {
         </nav>
         <div className="slide-up mt-5" key={tab}>
           {tab === "Overview" && <Overview go={setTab} />}
-          {tab === "Payments" && <Payments />}
+          {tab === "Payments" && <Payments focusOrder={focusOrder} />}
           {tab === "Guests" && <Guests />}
           {tab === "Passes" && <Passes />}
           {tab === "Volunteers" && <Volunteers />}

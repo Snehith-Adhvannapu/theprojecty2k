@@ -29,7 +29,7 @@ export const eventConfig = {
   organiser: {
     name: "Project.Y2k",
     address: "NCC Urban Nagarjuna Residency",
-    whatsapp: "+91 90522 57297",
+    whatsapp: "+91 70939 67777",
     email: "projecty2k.2k26@gmail.com",
     instagram: "@theproject.y2k",
     supportHours: "Any time",
@@ -51,7 +51,13 @@ export const eventConfig = {
     accountNote: process.env.NEXT_PUBLIC_UPI_NOTE || "",
     reviewHoldHours: 24,
   },
-  khelo: { name: "Khelo", url: "https://khel-o.com" },
+  khelo: {
+    name: "Khelo",
+    url: "https://khel-o.com",
+    logo: "/images/khelo-logo.png",
+    // Khelo's WhatsApp community page for Project Y2K gamers.
+    communityUrl: process.env.NEXT_PUBLIC_KHELO_COMMUNITY || "https://khel-o.com/c/y2k",
+  },
   limits: { maxPassesPerOrder: 4, holdMinutes: 45, maxPendingPerPhone: 2 },
 };
 

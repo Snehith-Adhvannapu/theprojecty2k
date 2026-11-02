@@ -60,3 +60,15 @@ export const instagramSchema = z
     if (!h) ctx.addIssue({ code: "custom", message: "That doesn't look like an Instagram handle" });
     return h;
   });
+
+/** Instagram handle that must be given (checkout). Stripped of @ and URLs like the optional one. */
+export const requiredInstagramSchema = z
+  .string({ message: "Instagram handle is required" })
+  .trim()
+  .min(1, "Instagram handle is required")
+  .max(120)
+  .transform((v, ctx) => {
+    const h = normalizeInstagram(v);
+    if (!h) { ctx.addIssue({ code: "custom", message: "That doesn't look like an Instagram handle" }); return z.NEVER; }
+    return h;
+  });

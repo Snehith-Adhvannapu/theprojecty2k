@@ -156,14 +156,18 @@ export interface OrderStatusView {
   reviewNote: string | null;
   expiresAt: string;
   amountPaise: number;
+  /** where the ticket will be emailed, masked: a***@gmail.com */
+  emailMasked: string;
   tickets: TicketView[];
   /** pending for > 10s: the server is asking the gateway directly */
   checkingWithGateway: boolean;
 }
 
+const maskEmail = (e: string) => { const [u, d] = e.split("@"); return d ? `${u.slice(0, 1)}***@${d}` : ""; };
+
 export async function getOrderStatus(orderId: string): Promise<OrderStatusView | null> {
   const load = async () =>
-    (await query("SELECT id, status, amount_paise, expires_at, created_at, review_note, expires_at <= now() AS expired FROM orders WHERE id = $1", [orderId]))[0];
+    (await query("SELECT id, status, amount_paise, expires_at, created_at, review_note, buyer_email, expires_at <= now() AS expired FROM orders WHERE id = $1", [orderId]))[0];
   let o = await load();
   if (!o) return null;
   let checking = false;
@@ -185,6 +189,7 @@ export async function getOrderStatus(orderId: string): Promise<OrderStatusView |
     expiresAt: new Date(o.expires_at).toISOString(),
     amountPaise: o.amount_paise,
     reviewNote: o.review_note ?? null,
+    emailMasked: maskEmail(String(o.buyer_email ?? "")),
     tickets: status === "paid" ? await ticketsForOrder({ query }, orderId) : [],
     checkingWithGateway: checking && status === "pending",
   };

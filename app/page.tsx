@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { eventConfig as e } from "@/config/event";
+import { KheloPartner, KheloStrip } from "@/components/Khelo";
 import { Logo } from "@/components/Logo";
 import { PassPicker } from "@/components/PassPicker";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -30,6 +31,7 @@ const photos = [
 export default function Home() {
   return (
     <main id="top" className="overflow-x-clip">
+      <KheloStrip />
       <header className="sticky top-0 z-30 border-b border-line bg-bg">
         <div className="wrap flex items-center justify-between gap-4 py-1.5">
           <Logo />
@@ -47,11 +49,8 @@ export default function Home() {
         <div className="wrap flex flex-wrap items-center gap-x-14 gap-y-10 pt-14 pb-16 md:pb-20">
           <div className="min-w-0 flex-[1_1_480px]">
             <p className="in eyebrow" style={{ "--i": 0 } as React.CSSProperties}>✦ {e.dateLabel}</p>
-            <h1 className="mt-6 font-normal">
-              <span className="in hero-project" style={{ "--i": 1 } as React.CSSProperties}>Project</span>
-              <span className="in block" style={{ "--i": 2 } as React.CSSProperties}>
-                <span className="hero-y2k">Y2K</span>
-              </span>
+            <h1 className="in mt-5 font-normal" style={{ "--i": 1 } as React.CSSProperties}>
+              <Image src="/images/y2k26-logo.webp" alt="Project Y2K26" width={760} height={585} priority sizes="(min-width: 768px) 460px, 86vw" className="h-auto w-[min(86vw,460px)]" />
             </h1>
             <p className="in muted mt-8 max-w-[38ch] text-lg" style={{ "--i": 3 } as React.CSSProperties}>{e.description}</p>
             <dl className="in mt-8 flex flex-wrap gap-x-10 gap-y-5" style={{ "--i": 4 } as React.CSSProperties}>
@@ -207,6 +206,7 @@ export default function Home() {
         </p>
       </section>
 
+      <KheloPartner />
       <SiteFooter />
     </main>
   );

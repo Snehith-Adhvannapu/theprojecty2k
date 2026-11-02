@@ -17,6 +17,21 @@ const wa = (phone: string, name: string, token: string) => {
   return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
 };
 
+/** WhatsApp message to the buyer about a payment that could not be confirmed. */
+const waNotConfirmed = (phone: string, name: string, orderId: string, note: string | null, refund: boolean) => {
+  const text = refund
+    ? `Hi ${name}, sorry: your Project Y2K pass sold out before we could confirm your payment. We'll refund you in full to the account you paid from.`
+    : `Hi ${name}, we couldn't confirm your Project Y2K payment${note ? `: ${note}` : ""}. ${note ? "You can fix it here: " : "Details: "}${window.location.origin}/order/${orderId}`;
+  return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+};
+
+const REASONS = [
+  "We couldn't find this payment in our bank account",
+  "The UTR doesn't match our bank record",
+  "The amount doesn't match the pass price",
+  "The screenshot is unclear or incomplete",
+];
+
 export function Payments() {
   const [q, setQ] = useState<Queue | null>(null);
   const [err, setErr] = useState("");
@@ -50,6 +65,7 @@ export function Payments() {
                 <span className="flex items-center gap-3">
                   <span className={r.status === "paid" ? "" : "text-crimson"}>{r.status === "paid" ? "Approved" : r.status === "needs_refund" ? "Refund needed" : "Rejected"}</span>
                   {r.ticketToken && <a className="inline-flex min-h-11 items-center border-b border-blood" href={wa(r.buyerPhone, r.buyerName, r.ticketToken)} target="_blank" rel="noreferrer">Send on WhatsApp</a>}
+                  {r.status !== "paid" && <a className="inline-flex min-h-11 items-center border-b border-blood" href={waNotConfirmed(r.buyerPhone, r.buyerName, r.id, r.reviewNote, r.status === "needs_refund")} target="_blank" rel="noreferrer">Tell them on WhatsApp</a>}
                 </span>
               </li>
             ))}
@@ -117,13 +133,19 @@ function Pending({ r, done }: { r: Row; done: () => void }) {
       )}
       {mode === "reject" && (
         <div className="mt-5 flex flex-col gap-3">
-          <label htmlFor={`rr-${r.id}`} className="text-sm font-medium">Reason (the buyer sees this)</label>
-          <input id={`rr-${r.id}`} className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. UTR not found in our bank. Check the number." disabled={busy} />
+          <label htmlFor={`rr-${r.id}`} className="text-sm font-medium">Reason (the buyer sees this, by email and on their order page)</label>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Quick reasons">
+            {REASONS.map((x) => (
+              <button key={x} type="button" className={`btn btn-quiet btn-calm min-h-11 px-3 text-left text-[13px] ${reason === x ? "!border-crimson" : ""}`} onClick={() => setReason(x)} disabled={busy}>{x}</button>
+            ))}
+          </div>
+          <input id={`rr-${r.id}`} className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Or type your own reason" disabled={busy} />
           <div className="flex flex-wrap gap-3">
-            <button className="btn btn-primary btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(true)}>Ask to resubmit</button>
+            <button className="btn btn-primary btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(true)}>Ask to fix &amp; resubmit</button>
             <button className="btn btn-quiet btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(false)}>Reject for good</button>
             <button className="btn btn-quiet btn-calm min-h-12" onClick={() => setMode("idle")} disabled={busy}>Back</button>
           </div>
+          <p className="muted text-[13px]"><strong className="text-fg">Fix &amp; resubmit</strong> keeps their pass for 2 more hours and emails them a link to send the right UTR or screenshot. <strong className="text-fg">Reject for good</strong> frees the pass and closes the order.</p>
         </div>
       )}
     </article>

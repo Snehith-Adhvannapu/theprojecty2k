@@ -69,7 +69,8 @@ export function CheckoutForm() {
     if (f.name.trim().length < 2) x.name = "Enter your full name";
     if (!normalizePhone(f.phone)) x.phone = "Enter a valid 10-digit mobile number";
     if (!/^\S+@\S+\.\S+$/.test(normalizeEmail(f.email))) x.email = "Enter a valid email address";
-    if (f.instagram.trim() && !normalizeInstagram(f.instagram)) x.instagram = "That doesn't look like an Instagram handle";
+    if (!f.instagram.trim()) x.instagram = "Enter your Instagram handle";
+    else if (!normalizeInstagram(f.instagram)) x.instagram = "That doesn't look like an Instagram handle";
     if (!accepted) x.accepted = "Please accept the terms to continue";
     setErrs(x);
     return Object.keys(x).length === 0;
@@ -91,7 +92,7 @@ export function CheckoutForm() {
       if (attempt.current.sig !== sig) attempt.current = { key: crypto.randomUUID(), sig };
       const order = await post("/api/orders", {
         passTypeId: pass.id, qty, name: f.name, phone: f.phone, email: f.email,
-        instagram: f.instagram || undefined, idempotencyKey: attempt.current.key, accepted: true,
+        instagram: f.instagram, idempotencyKey: attempt.current.key, accepted: true,
       });
       rememberOrder(order.id);
       router.push(`/order/${order.id}`);
@@ -155,7 +156,7 @@ export function CheckoutForm() {
               <p id="phone-help" className={errs.phone ? "field-error" : "muted text-[13px]"}>{errs.phone ?? "Used for event updates and to find you at the door."}</p>
             </div>
             <Input id="f-email" label="Email" type="email" err={errs.email} value={f.email} onChange={set("email")} disabled={busy} autoComplete="email" placeholder="you@example.com" />
-            <Input id="f-ig" label="Instagram handle (optional)" err={errs.instagram} value={f.instagram} onChange={set("instagram")} disabled={busy} autoComplete="off" autoCapitalize="none" placeholder="@yourhandle" />
+            <Input id="f-ig" label="Instagram handle" err={errs.instagram} value={f.instagram} onChange={set("instagram")} disabled={busy} autoComplete="off" autoCapitalize="none" placeholder="@yourhandle" />
           </div>
         </section>
 
@@ -174,7 +175,7 @@ export function CheckoutForm() {
             <input type="checkbox" className="mt-1 size-5 shrink-0 accent-[var(--blood)]" checked={accepted} disabled={busy}
               onChange={(ev) => { setAccepted(ev.target.checked); setErrs((x) => ({ ...x, accepted: undefined })); }} aria-invalid={!!errs.accepted} />
             <span>
-              I agree to the <Link href="/terms" target="_blank" className="border-b border-blood">Terms</Link>,{" "}
+              I agree to the <Link href="/terms" target="_blank" className="border-b border-blood">Terms</Link> and <Link href="/privacy" target="_blank" className="border-b border-blood">Privacy Policy</Link>, including that tickets are non-refundable.
             </span>
           </label>
           {errs.accepted && <p className="field-error mt-1" role="alert">{errs.accepted}</p>}

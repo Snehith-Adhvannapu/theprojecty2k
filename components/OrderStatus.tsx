@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { eventConfig as e } from "@/config/event";
 import { TicketCard } from "@/components/TicketCard";
 import { PaymentProof } from "@/components/PaymentProof";
+import { KheloQuest } from "@/components/Khelo";
 import { rememberOrder } from "@/lib/myOrders";
 import { paise } from "@/lib/normalize";
 
 interface T { token: string; shortCode: string; admits: number; passName: string; holderName: string; status: string }
-interface S { status: "pending" | "awaiting_review" | "rejected" | "paid" | "expired" | "needs_refund" | "refunded"; amountPaise: number; expiresAt: string; reviewNote: string | null; tickets: T[] }
+interface S { emailMasked: string; status: "pending" | "awaiting_review" | "rejected" | "paid" | "expired" | "needs_refund" | "refunded"; amountPaise: number; expiresAt: string; reviewNote: string | null; tickets: T[] }
 
 /** Polls the server. Never decides anything itself: a ticket shows only once the server says `paid`. */
 export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: string | null }) {
@@ -52,6 +53,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
         </div>
         {s.tickets.map((t, i) => <TicketCard key={t.token} t={{ ...t, status: t.status as "valid" }} delay={i + 1} />)}
         <p className="muted text-center text-sm">Screenshot this page. If the QR won&apos;t scan, read your short code to the volunteer. Your name and ID will be checked at the door.</p>
+        <KheloQuest />
         <div className="flex gap-3">
           {s.tickets[0] && <Link href={`/t/${s.tickets[0].token}`} className="btn btn-calm btn-quiet min-h-12 flex-1">Open ticket page</Link>}
           {s.tickets[0] && <a href={`/api/tickets/${s.tickets[0].token}/pdf`} className="btn btn-calm btn-quiet min-h-12 flex-1">Download PDF</a>}
@@ -90,8 +92,10 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
     return (
       <div role="status" aria-live="polite" className="slide-up mt-8">
         <svg className="check-draw pop size-12 text-fg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.5" strokeWidth="1.2" /><path d="M7 12.5l3.2 3.2L17 9" /></svg>
-        <h1 className="mt-4 text-[26px] leading-tight">Submitted. We&apos;re verifying your payment.</h1>
-        <p className="muted mt-2">Don&apos;t worry, nothing more is needed from you. You can close this page; we&apos;ll get back to you soon.</p>
+        <p className="eyebrow mt-4">Order received</p>
+        <h1 className="mt-2 text-[26px] leading-tight">Your ticket is being processed.</h1>
+        <p className="mt-2 text-[17px] leading-snug">Don&apos;t worry, nothing more is needed from you. We&apos;re checking your payment now and will email your ticket{s.emailMasked ? <> to <strong className="tnum">{s.emailMasked}</strong></> : null} as soon as it&apos;s confirmed.</p>
+        <p className="muted mt-2 text-sm">You can close this page. If something looks wrong with your payment, we&apos;ll email you and show it here.</p>
         <ol className="card mt-6 divide-y divide-line">
           {steps.map(([t, d, st], i) => (
             <li key={t} className="flex gap-3 p-4">
@@ -105,6 +109,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
         </ol>
         <p className="muted mt-4 text-sm">Order reference <span className="tnum text-fg">{ref}</span> · {paise(s.amountPaise)}</p>
         {offline && <p className="mt-3 text-sm text-danger">You seem to be offline. Reconnecting…</p>}
+        <KheloQuest lead="While you wait, " className="mt-6" />
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link href="/find-ticket" className="btn btn-calm btn-quiet min-h-12 flex-1">My tickets</Link>
           {whatsapp ? <a href={whatsapp} className="btn btn-calm btn-quiet min-h-12 flex-1">Taking long? WhatsApp us</a> : <p className="muted self-center text-sm">Taking long? WhatsApp {e.organiser.whatsapp}</p>}

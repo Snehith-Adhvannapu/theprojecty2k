@@ -17,11 +17,9 @@ async function main() {
     );
     // Quantities are provisional: set the real numbers in /admin > Passes before sales open.
     const DESC = "The Matrix: Hyderabad's first theatre rave.";
+    // Only Early Bird is on sale for now. Add the rest in /admin > Passes when you are ready.
     const passes: [string, string, number, number, number][] = [
-      ["Early Bird Pass", DESC, 139900, 100, 1],
-      ["General Pass", DESC, 159900, 100, 1],
-      ["Couple Pass", DESC + " One QR, admits 2.", 279900, 50, 2],
-      ["Backstage Pass", DESC, 249900, 50, 1],
+      ["Early Bird Pass", DESC, 149900, 100, 1],
     ];
     for (const [i, [name, desc, price, qty, admits]] of passes.entries()) {
       await db.query(
@@ -29,7 +27,7 @@ async function main() {
         [e.id, name, desc, price, qty, admits, i],
       );
     }
-    console.log("seeded event + 4 passes (check quantities in /admin)");
+    console.log("seeded event + 1 pass (check quantities in /admin)");
   }
 
   const staff: [string, string, string, string | undefined][] = [

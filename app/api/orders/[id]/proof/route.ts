@@ -3,6 +3,7 @@ import { fail, handle, ok } from "@/lib/api";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
 import { submitProof } from "@/lib/payments/manual";
 import { flushOutbox } from "@/lib/email";
+import { notifyNewPayment } from "@/lib/notify";
 import { MAX_PROOF_BYTES } from "@/lib/proof";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -18,7 +19,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (file.size > MAX_PROOF_BYTES) return fail("FILE_TOO_BIG", "That image is too large. Try a smaller screenshot.", 413);
 
     const result = await submitProof(id, String(form.get("utr") ?? ""), Buffer.from(await file.arrayBuffer()));
-    await flushOutbox(id).catch(() => {}); // "we're verifying" email; failures stay queued
+    await Promise.allSettled([
+      flushOutbox(id), // "we're verifying" email; failures stay queued
+      notifyNewPayment(id), // tells the organiser a payment is waiting
+    ]);
     return ok(result);
   });
 }

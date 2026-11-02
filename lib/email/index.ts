@@ -42,15 +42,32 @@ async function deliver(mail: Mail) {
   if (!res.ok) throw new Error(`email provider ${res.status}`);
 }
 
+/** Plain alert to the organiser (new payment waiting). Not queued: callers treat it as best effort. */
+export async function sendAdminAlert(to: string, subject: string, text: string) {
+  await deliver({ to, subject, text, html: `<pre style="font:15px/1.5 Arial,sans-serif;white-space:pre-wrap">${esc(text)}</pre>` });
+}
+
+/** Khelo "side quest" card for emails (table layout, inline styles: email clients ignore the rest). */
+function questCard(lead = "") {
+  const k = eventConfig.khelo;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #222;background:#111;margin:18px 0 0"><tr>
+<td style="padding:18px"><div style="font-size:11px;letter-spacing:4px;color:#e3302f;text-transform:uppercase">Side quest &middot; Gamers only</div>
+<div style="font:700 30px/1.05 Impact,Arial,sans-serif;letter-spacing:1px;color:#f1eeea;margin:8px 0">GAMER? JOIN THE SQUAD.</div>
+<div style="font-size:15px;line-height:1.5;color:#cbced2">${esc(lead ? `${lead}we` : "We")} host free gaming tournaments. Join the Khelo WhatsApp community for gamers and sports lovers, see photos from the last one, and find people to play with.</div>
+<a href="${k.communityUrl}" style="display:block;margin-top:14px;background:#e3302f;color:#fff;text-align:center;font-weight:700;padding:14px;text-decoration:none">Join on WhatsApp &rarr;</a>
+<div style="font-size:12px;color:#8e8e93;margin-top:10px">Only for gamers. Not into gaming? Ignore this.</div></td>
+<td width="44" style="border-left:2px dashed #333;text-align:center;color:#e3302f;font:700 18px Impact,Arial,sans-serif;letter-spacing:3px">K<br>H<br>E<br>L<br>-<br>O</td></tr></table>`;
+}
+
 function shell(title: string, inner: string) {
   return `<!doctype html><html><body style="margin:0;background:#050505;font-family:Arial,Helvetica,sans-serif;color:#f1eeea">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" style="max-width:520px;background:#0c0c0c;border:1px solid #222">
-<tr><td style="padding:24px 24px 8px;font-size:12px;letter-spacing:4px;text-transform:uppercase;color:#e3302f">${esc(eventConfig.name)}</td></tr>
+<tr><td style="padding:24px 24px 8px"><img src="${appUrl()}/images/y2k26-logo.png" width="150" alt="${esc(eventConfig.name)}" style="display:block;border:0;height:auto"></td></tr>
 <tr><td style="padding:0 24px 8px;font-size:26px;font-weight:700">${esc(title)}</td></tr>
 <tr><td style="padding:8px 24px 24px;font-size:16px;line-height:1.5">${inner}</td></tr>
 <tr><td style="padding:16px 24px;border-top:1px solid #222;font-size:12px;color:#8e8e93">
-Ticketing powered by <a href="${eventConfig.khelo.url}" style="color:#cbced2">${eventConfig.khelo.name}</a>.
+Ticketing powered by <a href="${eventConfig.khelo.url}" style="color:#cbced2">${eventConfig.khelo.name}</a> &middot; <a href="${eventConfig.khelo.communityUrl}" style="color:#cbced2">Join the gamer community</a>.
 Questions? ${esc(eventConfig.organiser.email)} · WhatsApp ${esc(eventConfig.organiser.whatsapp)}</td></tr>
 </table></td></tr></table></body></html>`;
 }
@@ -73,7 +90,7 @@ async function ticketMail(orderId: string, to: string): Promise<Mail> {
     .join("");
   const inner = `<p>You're in. Your ticket PDF is attached and also on the ticket page. If your phone has no signal at the door, show the short code below.</p>
 ${blocks}
-<p style="font-size:14px;color:#cbced2">${esc(eventConfig.dateLabel)} · Doors ${esc(eventConfig.doorsOpen)}<br>${esc(eventConfig.venue.name)}, ${esc(eventConfig.venue.address)}<br>Carry a valid government photo ID.</p>`;
+<p style="font-size:14px;color:#cbced2">${esc(eventConfig.dateLabel)} · Doors ${esc(eventConfig.doorsOpen)}<br>${esc(eventConfig.venue.name)}, ${esc(eventConfig.venue.address)}<br>Carry a valid government photo ID.</p>${questCard()}`;
   const text = `Your ${eventConfig.name} ticket${tickets.length > 1 ? "s" : ""}:\n` +
     tickets.map((t) => `${t.shortCode} (${t.passName}, admits ${t.admits}) ${appUrl()}/t/${t.token}`).join("\n");
   return { to, subject: `Your ${eventConfig.name} ticket`, html: shell("Your ticket", inner), text, attachments };
@@ -82,7 +99,7 @@ ${blocks}
 function receivedMail(to: string, orderId: string): Mail {
   const inner = `<p>We received your payment details. We check every payment against our bank account by hand, so this can take a little while. You'll get another email with your ticket as soon as it's confirmed.</p>
 <p><a href="${appUrl()}/order/${orderId}" style="display:inline-block;background:#e3302f;color:#fff;text-decoration:none;padding:12px 18px;font-weight:700">View your order</a></p>
-<p>Nothing more is needed from you. Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>`;
+<p>Nothing more is needed from you. Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>${questCard("While you wait, ")}`;
   return { to, subject: `${eventConfig.name}: payment received, verifying`, html: shell("We're verifying your payment", inner), text: `We received your payment details and are verifying them. You will get your ticket by email once it is confirmed. Order page: ${appUrl()}/order/${orderId}` };
 }
 

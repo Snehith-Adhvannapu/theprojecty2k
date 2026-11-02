@@ -2,7 +2,7 @@ import { z } from "zod";
 import { body, fail, handle, ok } from "@/lib/api";
 import { reserveOrder } from "@/lib/inventory";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
-import { emailSchema, instagramSchema, phoneSchema } from "@/lib/normalize";
+import { emailSchema, phoneSchema, requiredInstagramSchema } from "@/lib/normalize";
 
 const schema = z.object({
   passTypeId: z.string().uuid(),
@@ -10,7 +10,7 @@ const schema = z.object({
   name: z.string().trim().min(2, "Enter your full name").max(80),
   phone: phoneSchema,
   email: emailSchema,
-  instagram: instagramSchema,
+  instagram: requiredInstagramSchema,
   idempotencyKey: z.string().min(8).max(80),
   accepted: z.literal(true, { error: "Please accept the terms" }),
 });

@@ -37,7 +37,7 @@ Payments through Razorpay (test mode until the account is approved). Tickets are
 
 ## Brand Commitments
 
-Name "Project Y2K". Tokens in `design/tokens.css` and screen references in `design/reference/` are binding. "Powered by Khelo" appears only in the footer, ticket page and ticket email.
+Name "Project Y2K". Tokens in `design/tokens.css` and screen references in `design/reference/` are binding. Khelo placements are listed in CLAUDE.md (strip, partner block, ticket, PDF, emails; never scanner or admin).
 
 ## Evidence on Hand
 

@@ -40,11 +40,12 @@ export async function ticketPdf(t: PdfTicket): Promise<Uint8Array> {
   page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: BG });
   page.drawRectangle({ x: 0, y: H - 4, width: W, height: 4, color: BLOOD });
 
-  // Masthead
-  spaced(page, "PROJECT", M, H - 44, strong, 9, CRIMSON, 4);
-  page.drawText("Y2K", { x: M - 2, y: H - 112, size: 82, font: bebas, color: CHROME });
-  page.drawText(e.tagline, { x: M, y: H - 132, size: 11, font: body, color: MUTED });
+  // Masthead: the Project Y2K26 logo
+  const logo = await doc.embedPng(fs.readFileSync(path.join(process.cwd(), "public", "images", "y2k26-logo.png")));
+  const lw = 150, lh = (lw * logo.height) / logo.width;
+  page.drawImage(logo, { x: M - 6, y: H - 20 - lh, width: lw, height: lh });
   spaced(page, "ENTRY PASS", W - M - 70, H - 44, strong, 8, MUTED, 3);
+  page.drawText(e.tagline, { x: W - M - body.widthOfTextAtSize(e.tagline, 10), y: H - 62, size: 10, font: body, color: MUTED });
   page.drawLine({ start: { x: M, y: H - 152 }, end: { x: W - M, y: H - 152 }, thickness: 0.75, color: LINE });
 
   // Admits + holder
@@ -82,6 +83,9 @@ export async function ticketPdf(t: PdfTicket): Promise<Uint8Array> {
   // Footer
   page.drawLine({ start: { x: M, y: 62 }, end: { x: W - M, y: 62 }, thickness: 0.75, color: LINE });
   page.drawText("Carry a valid government photo ID. This QR works once. Tickets are non-transferable.", { x: M, y: 44, size: 8.5, font: body, color: MUTED });
-  page.drawText(`Ticketing powered by ${e.khelo.name}`, { x: M, y: 28, size: 8, font: body, color: MUTED });
+  const kl = await doc.embedPng(fs.readFileSync(path.join(process.cwd(), "public", "images", "khelo-logo.png")));
+  page.drawImage(kl, { x: M, y: 17, width: 18, height: 18 });
+  page.drawText(`Ticketing powered by ${e.khelo.name} · khel-o.com`, { x: M + 24, y: 26, size: 8, font: body, color: MUTED });
+  page.drawText("Gamers: join the Khelo WhatsApp community (link in your ticket email).", { x: M + 24, y: 15, size: 7.5, font: body, color: MUTED });
   return doc.save();
 }

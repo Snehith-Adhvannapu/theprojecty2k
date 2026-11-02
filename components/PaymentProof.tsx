@@ -114,7 +114,13 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
       <h1 className="text-[26px] leading-tight">Pay {paise(amountPaise)} by UPI</h1>
       <p className="muted mt-2 text-sm">Your pass is held for <span className="tnum text-fg">{left}</span>. Pay the exact amount, then send us the proof below.</p>
 
-      {note && <p role="alert" className="mt-4 rounded-sm border border-blood p-3 text-sm"><strong className="text-crimson">Please fix:</strong> {note}</p>}
+      {note && (
+        <div role="alert" className="mt-4 rounded-sm border border-blood bg-[var(--selected)] p-4">
+          <p className="font-semibold text-crimson">We couldn&apos;t confirm your payment yet</p>
+          <p className="mt-1 text-[15px]">{note}.</p>
+          <p className="muted mt-2 text-sm">Already paid? Send the correct 12-digit UTR and a clear screenshot below. Your pass is held while you fix it.</p>
+        </div>
+      )}
 
       <section className="card mt-5 p-5" aria-label="Payment details">
         <p className="label">Step 1 · Pay</p>

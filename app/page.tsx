@@ -157,7 +157,7 @@ export default function Home() {
             </div>
           ))}
           {e.venue.mapUrl && (
-            <a href={e.venue.mapUrl} className="btn btn-quiet self-end">Open map</a>
+            <a href={e.venue.mapUrl} target="_blank" rel="noopener noreferrer" className="btn btn-quiet self-end" aria-label="Open map in Google Maps (new tab)">Open map <span aria-hidden="true">↗</span></a>
           )}
         </div>
       </section>

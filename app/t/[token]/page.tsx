@@ -40,7 +40,7 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
         <p className="muted flex justify-between gap-3 pt-2 text-xs">
           <span>{e.dateLabel}</span>
           <span>
-            Ticketing powered by <a href={e.khelo.url} className="border-b border-blood text-fg">{e.khelo.name}</a>
+            Ticketing powered by <a href={e.khelo.url} target="_blank" rel="noopener noreferrer" className="border-b border-blood text-fg">{e.khelo.name}</a>
           </span>
         </p>
       </div>

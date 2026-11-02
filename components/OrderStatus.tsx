@@ -34,7 +34,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
     return () => { stop = true; clearTimeout(timer); };
   }, [orderId, refresh]);
 
-  const help = whatsapp ? <a href={whatsapp} className="border-b border-blood text-fg">WhatsApp us</a> : <>WhatsApp {e.organiser.whatsapp}</>;
+  const help = whatsapp ? <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="border-b border-blood text-fg">WhatsApp us</a> : <>WhatsApp {e.organiser.whatsapp}</>;
 
   if (missing) {
     return <Notice title="We can't find that order.">Check the link, or <Link href="/find-ticket" className="border-b border-blood text-fg">find your ticket</Link> using your email or phone.</Notice>;
@@ -57,7 +57,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
         <div className="flex gap-3">
           {s.tickets[0] && <Link href={`/t/${s.tickets[0].token}`} className="btn btn-calm btn-quiet min-h-12 flex-1">Open ticket page</Link>}
           {s.tickets[0] && <a href={`/api/tickets/${s.tickets[0].token}/pdf`} className="btn btn-calm btn-quiet min-h-12 flex-1">Download PDF</a>}
-          {whatsapp && <a href={whatsapp} className="btn btn-calm btn-quiet min-h-12 flex-1">WhatsApp help</a>}
+          {whatsapp && <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet min-h-12 flex-1">WhatsApp help</a>}
         </div>
       </div>
     );
@@ -112,7 +112,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
         <KheloQuest className="mt-6" />
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link href="/find-ticket" className="btn btn-calm btn-quiet min-h-12 flex-1">My tickets</Link>
-          {whatsapp ? <a href={whatsapp} className="btn btn-calm btn-quiet min-h-12 flex-1">Taking long? WhatsApp us</a> : <p className="muted self-center text-sm">Taking long? WhatsApp {e.organiser.whatsapp}</p>}
+          {whatsapp ? <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet min-h-12 flex-1">Taking long? WhatsApp us</a> : <p className="muted self-center text-sm">Taking long? WhatsApp {e.organiser.whatsapp}</p>}
         </div>
       </div>
     );

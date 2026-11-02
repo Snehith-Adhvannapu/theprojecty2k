@@ -12,7 +12,7 @@ function Mark({ size = 22 }: { size?: number }) {
 export function KheloStrip() {
   return (
     <div className="border-b border-line bg-band">
-      <a href={khelo.url} rel="noopener" className="wrap flex min-h-11 items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-muted">
+      <a href={khelo.url} target="_blank" rel="noopener noreferrer" className="wrap flex min-h-11 items-center gap-3 text-xs uppercase tracking-[0.2em] text-muted">
         <span className="inline-flex items-center gap-2.5"><span className="size-1.5 rounded-full bg-crimson" aria-hidden="true" />Ticketing powered by</span>
         <span className="inline-flex items-center gap-2 font-extrabold tracking-[0.24em] text-fg"><Mark size={20} />KHEL-O</span>
       </a>
@@ -25,7 +25,7 @@ export function KheloQuest({ className = "" }: { className?: string }) {
   return (
     <aside className={`quest ${className}`} aria-label="Join the Khelo gamers community">
       <div className="min-w-0 flex-1 p-5">
-        <p className="eyebrow !text-[11px]">Gamers only</p>
+        <p className="eyebrow !text-xs">Gamers only</p>
         <p className="quest-h mt-2.5">Gamer?<br />Join the squad.</p>
         <p className="muted mt-3 text-[15px] leading-relaxed">Khelo helps you find the best gaming cafés and snooker hubs around you in Hyderabad. We host tournaments, so join.</p>
         <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary btn-calm btn-block mt-4">Join the gamers community <span aria-hidden="true">→</span></a>

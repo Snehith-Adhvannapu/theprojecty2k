@@ -26,7 +26,7 @@ export function TicketActions({ token, whatsapp }: { token: string; whatsapp: st
         {state === "loading" && <span className="spinner" aria-hidden="true" />}
         {state === "sent" ? "Sent. Check your inbox" : state === "error" ? "Couldn't send. Try again" : "Email me a copy"}
       </button>
-      {whatsapp && <a href={whatsapp} className="btn btn-calm btn-quiet min-h-12 flex-1 text-sm">WhatsApp help</a>}
+      {whatsapp && <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet min-h-12 flex-1 text-sm">WhatsApp help</a>}
     </div>
   );
 }

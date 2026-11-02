@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { rememberOrder } from "@/lib/myOrders";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { eventConfig as e } from "@/config/event";
@@ -92,6 +93,7 @@ export function CheckoutForm() {
         passTypeId: pass.id, qty, name: f.name, phone: f.phone, email: f.email,
         instagram: f.instagram || undefined, idempotencyKey: attempt.current.key, accepted: true,
       });
+      rememberOrder(order.id);
       router.push(`/order/${order.id}`);
     } catch (err) {
       setPhase("error");

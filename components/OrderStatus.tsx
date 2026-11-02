@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { eventConfig as e } from "@/config/event";
 import { TicketCard } from "@/components/TicketCard";
 import { PaymentProof } from "@/components/PaymentProof";
+import { rememberOrder } from "@/lib/myOrders";
 import { paise } from "@/lib/normalize";
 
 interface T { token: string; shortCode: string; admits: number; passName: string; holderName: string; status: string }
@@ -24,7 +25,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
         const r = await fetch(`/api/orders/${orderId}/status`, { cache: "no-store" });
         if (r.status === 404) { setMissing(true); return; }
         const j = await r.json();
-        if (j.ok) { setS(j.data); setOffline(false); if (j.data.status !== "pending" && j.data.status !== "awaiting_review") return; }
+        if (j.ok) { rememberOrder(orderId); setS(j.data); setOffline(false); if (j.data.status !== "pending" && j.data.status !== "awaiting_review") return; }
       } catch { setOffline(true); }
       if (!stop) timer = setTimeout(tick, 5000);
     };

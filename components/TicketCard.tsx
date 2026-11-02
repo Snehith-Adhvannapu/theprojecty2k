@@ -23,7 +23,8 @@ export function TicketCard({ t, delay = 0 }: { t: TicketCardData; delay?: number
           </div>
           <p className="shrink-0 whitespace-nowrap text-right font-display leading-[0.9] tracking-[0.02em]"><span className="block text-[13px] tracking-[0.2em] text-muted">ADMITS</span><span className="text-[64px]">{t.admits}</span></p>
         </div>
-        <p className="muted mt-3 text-[13px]">{e.venue.name} · Doors {e.doorsOpen}</p>
+        <p className="muted mt-3 text-[13px]">{e.venue.name}, {e.venue.address} · Doors {e.doorsOpen}</p>
+        <a href={e.venue.mapUrl} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet mt-3 min-h-11 w-full">Get directions (Google Maps)</a>
       </div>
       <div className="relative flex flex-col items-center gap-3.5 border-t border-dashed border-line-strong p-5">
         <div className={dead ? "opacity-25" : ""}><TicketQR token={t.token} /></div>

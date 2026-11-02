@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import QRCode from "qrcode";
 import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, PDFString, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { eventConfig as e } from "@/config/event";
 
 export interface PdfTicket { token: string; shortCode: string; admits: number; passName: string; holderName: string }
@@ -65,6 +65,16 @@ export async function ticketPdf(t: PdfTicket): Promise<Uint8Array> {
     let s = v; while (body.widthOfTextAtSize(s, 9.5) > colW - 16 && s.length > 4) s = s.slice(0, -2);
     page.drawText(s === v ? s : s + "…", { x, y: stripY + 13, size: 9.5, font: strong, color: FG });
   });
+  // Venue column links to Google Maps (the QR itself stays token-only).
+  {
+    const x0 = M + 2 * colW;
+    const link = doc.context.register(doc.context.obj({
+      Type: "Annot", Subtype: "Link", Rect: [x0, stripY, W - M, stripY + 44], Border: [0, 0, 0],
+      A: { Type: "Action", S: "URI", URI: PDFString.of(e.venue.mapUrl) },
+    }));
+    page.node.addAnnot(link);
+    spaced(page, "TAP FOR MAP", x0 + 10, stripY + 4, strong, 5.5, rgb(0.89, 0.19, 0.18), 1.5);
+  }
 
   // QR on a light panel so any scanner reads it
   const PANEL = 232;

@@ -92,7 +92,8 @@ async function ticketMail(orderId: string, to: string): Promise<Mail> {
     .join("");
   const inner = `<p>You're in. Your ticket PDF is attached and also on the ticket page. If your phone has no signal at the door, show the short code below.</p>
 ${blocks}
-<p style="font-size:14px;color:#cbced2">${esc(eventConfig.dateLabel)} · Doors ${esc(eventConfig.doorsOpen)}<br>${esc(eventConfig.venue.name)}, ${esc(eventConfig.venue.address)}<br>Carry a valid government photo ID.</p>${questCard()}`;
+<p style="font-size:14px;color:#cbced2">${esc(eventConfig.dateLabel)} · Doors ${esc(eventConfig.doorsOpen)}<br>${esc(eventConfig.venue.name)}, ${esc(eventConfig.venue.address)}<br>Carry a valid government photo ID.</p>
+<p style="margin:0 0 6px"><a href="${eventConfig.venue.mapUrl}" style="color:#f1eeea;font-weight:700;border-bottom:1px solid #e3302f;text-decoration:none">Get directions in Google Maps &rarr;</a></p>${questCard()}`;
   const text = `Your ${eventConfig.name} ticket${tickets.length > 1 ? "s" : ""}:\n` +
     tickets.map((t) => `${t.shortCode} (${t.passName}, admits ${t.admits}) ${appUrl()}/t/${t.token}`).join("\n");
   return { to, subject: `Your ${eventConfig.name} ticket`, html: shell("Your ticket", inner), text, attachments };

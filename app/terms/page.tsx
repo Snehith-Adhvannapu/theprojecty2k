@@ -8,7 +8,7 @@ export default function Terms() {
   return (
     <PolicyPage title="Terms & conditions" intro="Please read these before buying. By paying you agree to them.">
       <ol>
-        <li><strong>Organiser.</strong> {e.name} is organised by {e.organiser.name}, {e.organiser.address}. Ticketing is powered by {e.khelo.name}.</li>
+        <li><strong>Organiser.</strong> {e.name} is organised by {e.organiser.name}, {e.organiser.address}.</li>
         <li><strong>Entry.</strong> A valid ticket and government photo ID are required. Each ticket admits the number of people stated on it, once.</li>
         <li><strong>Right of admission.</strong> The organiser may refuse or remove anyone who breaches the rules, behaves unsafely, or cannot show valid ID, without refund.</li>
         <li><strong>Tickets.</strong> Tickets are issued only after payment is verified. Duplicated, altered, or resold-for-profit tickets may be cancelled without refund. Each QR code works once; whoever&apos;s code is scanned first is admitted.</li>

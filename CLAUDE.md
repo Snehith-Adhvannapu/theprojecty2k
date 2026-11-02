@@ -59,4 +59,4 @@ Routes are thin: validate with Zod, call a `lib` function, return `{ ok, data | 
 - For UI work, run the dev server, view at 390px and 1280px, compare with the reference, fix, repeat 2 to 3 times.
 - Test mode only. No live keys, no real-money tests, no production deploys without being asked.
 - Do not invent event facts (venue, prices, lineup, attendance numbers, sponsors). Use `config/event.ts` placeholders.
-- Khelo (ticketing and community partner, khel-o.com) appears in the strip on public screens, the landing partner block, the footer, the ticket page, the PDF ticket, and ticket and order emails. Owner decision 2026-11-03. The "side quest" card (`components/Khelo.tsx`) asks gamers to join the Khelo WhatsApp community (`config/event.ts` khelo.communityUrl) while a buyer waits for approval and on the ticket. Never on the scanner or admin.
+- Khelo sponsorship was cancelled 2026-11-03: no Khelo branding, links or community prompts anywhere.

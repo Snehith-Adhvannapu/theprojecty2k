@@ -6,7 +6,7 @@ import { emailSchema, phoneSchema, requiredInstagramSchema } from "@/lib/normali
 
 const schema = z.object({
   passTypeId: z.string().uuid(),
-  qty: z.number().int().min(1).max(10),
+  qty: z.number().int().min(1).max(15),
   name: z.string().trim().min(2, "Enter your full name").max(80),
   phone: phoneSchema,
   email: emailSchema,

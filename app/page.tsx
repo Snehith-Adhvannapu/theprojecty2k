@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { eventConfig as e } from "@/config/event";
-import { KheloPartner, KheloStrip } from "@/components/Khelo";
 import { Logo } from "@/components/Logo";
 import { PassPicker } from "@/components/PassPicker";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -31,7 +30,6 @@ const photos = [
 export default function Home() {
   return (
     <main id="top" className="overflow-x-clip">
-      <KheloStrip />
       <header className="sticky top-0 z-30 border-b border-line bg-bg">
         <div className="wrap flex items-center justify-between gap-4 py-1.5">
           <Logo tag="The Matrix" />
@@ -209,7 +207,6 @@ export default function Home() {
         </p>
       </section>
 
-      <KheloPartner />
       <SiteFooter />
     </main>
   );

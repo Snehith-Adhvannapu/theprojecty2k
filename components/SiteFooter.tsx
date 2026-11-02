@@ -30,12 +30,6 @@ export function SiteFooter() {
         </nav>
         <div className="muted min-w-48 flex-1 text-[13px]">
           <p>© 2026 Project Y2K · {e.organiser.name}</p>
-          <p className="mt-2">
-            Ticketing powered by{" "}
-            <a href={e.khelo.url} className="border-b border-blood text-fg" target="_blank" rel="noopener noreferrer">
-              {e.khelo.name}
-            </a>
-          </p>
         </div>
       </div>
     </footer>

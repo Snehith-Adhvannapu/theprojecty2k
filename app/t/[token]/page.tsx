@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CalmShell } from "@/components/CalmShell";
-import { KheloQuest } from "@/components/Khelo";
 import { TicketCard } from "@/components/TicketCard";
 import { TicketActions } from "@/components/TicketActions";
 import { eventConfig as e } from "@/config/event";
@@ -36,12 +35,8 @@ export default async function TicketPage({ params }: { params: Promise<{ token: 
           Screenshot this page. If the QR won&apos;t scan, read your short code to the volunteer. Your name and ID will be checked at the door.
         </p>
         <TicketActions token={token} whatsapp={whatsappLink("Hi, I need help with my Project Y2K ticket")} />
-        {t.status !== "revoked" && <KheloQuest className="mt-2" />}
         <p className="muted flex justify-between gap-3 pt-2 text-xs">
           <span>{e.dateLabel}</span>
-          <span>
-            Ticketing powered by <a href={e.khelo.url} target="_blank" rel="noopener noreferrer" className="border-b border-blood text-fg">{e.khelo.name}</a>
-          </span>
         </p>
       </div>
     </CalmShell>

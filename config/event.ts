@@ -62,14 +62,7 @@ export const eventConfig = {
     accountNote: process.env.NEXT_PUBLIC_UPI_NOTE || "",
     reviewHoldHours: 24,
   },
-  khelo: {
-    name: "khel-o",
-    url: "https://khel-o.com",
-    logo: "/images/khelo-logo.png",
-    // Khelo's WhatsApp community page for Project Y2K gamers.
-    communityUrl: process.env.NEXT_PUBLIC_KHELO_COMMUNITY || "https://khel-o.com/c/y2k",
-  },
-  limits: { maxPassesPerOrder: 4, holdMinutes: 45, maxPendingPerPhone: 2 },
+  limits: { maxPassesPerOrder: 15, holdMinutes: 45, maxPendingPerPhone: 2 },
 };
 
 export const isPlaceholder = (s: string) => /\[[^\]]+\]/.test(s);

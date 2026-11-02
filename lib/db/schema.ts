@@ -23,7 +23,7 @@ export const events = pgTable("events", {
   id: id(),
   name: text("name").notNull(),
   startsAt: ts("starts_at").notNull(),
-  maxPerOrder: integer("max_per_order").notNull().default(4),
+  maxPerOrder: integer("max_per_order").notNull().default(15),
   createdAt: ts("created_at").notNull().defaultNow(),
 });
 

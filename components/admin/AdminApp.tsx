@@ -49,7 +49,6 @@ export function AdminApp({ name, initialTab, focusOrder }: { name: string; initi
           {tab === "Check-ins" && <Checkins />}
           {tab === "Tools" && <Tools />}
         </div>
-        <p className="muted mt-10 text-xs">Ticketing powered by khel-o</p>
       </div>
     </div>
   );

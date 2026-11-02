@@ -68,7 +68,7 @@ describe("admin alert when a payment is submitted", () => {
 });
 
 describe("ticket pdf with the logo", () => {
-  it("renders a PDF that embeds the Y2K26 and Khelo images", async () => {
+  it("renders a PDF that embeds the Y2K26 logo", async () => {
     const bytes = await ticketPdf({ token: "t".repeat(43), shortCode: "Y2K-ABCDEF", admits: 1, passName: "Early Bird Pass", holderName: "Asha Rao" });
     expect(Buffer.from(bytes).subarray(0, 4).toString()).toBe("%PDF");
     expect(Buffer.from(bytes).toString("latin1")).toContain("/Subtype /Image");

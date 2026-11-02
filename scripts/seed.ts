@@ -13,7 +13,7 @@ async function main() {
   const ev = await db.query("SELECT id FROM events LIMIT 1");
   if (!ev.length) {
     const [e] = await db.query(
-      "INSERT INTO events (name, starts_at, max_per_order) VALUES ('Project Y2K', '2026-11-15T00:00:00+05:30', 4) RETURNING id",
+      "INSERT INTO events (name, starts_at, max_per_order) VALUES ('Project Y2K', '2026-11-15T00:00:00+05:30', 15) RETURNING id",
     );
     // Quantities are provisional: set the real numbers in /admin > Passes before sales open.
     const DESC = "The Matrix: Hyderabad's first theatre rave.";

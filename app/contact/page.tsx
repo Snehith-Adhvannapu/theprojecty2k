@@ -17,7 +17,6 @@ export default function Contact() {
         Support hours: {o.supportHours}<br />
         Event-day helpline: {o.eventDayHelpline}
       </address>
-      <p className="muted text-sm">Ticketing powered by {e.khelo.name}.</p>
     </PolicyPage>
   );
 }

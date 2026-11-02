@@ -22,7 +22,7 @@ Sell about 300 tickets to one party on 15 November 2026 and get everyone in the 
 
 ## Positioning
 
-A party-brand site that feels like the party (chrome-noir, flash photography), whose payment, ticket and entry screens are calmer and more trustworthy than the brand around them. Ticketing is powered by Khelo.
+A party-brand site that feels like the party (chrome-noir, flash photography), whose payment, ticket and entry screens are calmer and more trustworthy than the brand around them.
 
 ## Operating Context
 
@@ -37,7 +37,7 @@ Payments through Razorpay (test mode until the account is approved). Tickets are
 
 ## Brand Commitments
 
-Name "Project Y2K". Tokens in `design/tokens.css` and screen references in `design/reference/` are binding. Khelo placements are listed in CLAUDE.md (strip, partner block, ticket, PDF, emails; never scanner or admin).
+Name "Project Y2K". Tokens in `design/tokens.css` and screen references in `design/reference/` are binding.
 
 ## Evidence on Hand
 

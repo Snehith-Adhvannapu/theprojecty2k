@@ -28,7 +28,7 @@ export function KheloQuest({ className = "" }: { className?: string }) {
         <p className="eyebrow !text-xs">Gamers only</p>
         <p className="quest-h mt-2.5">Gamers get<br />in first.</p>
         <p className="muted mt-3 text-[15px] leading-relaxed">Khelo finds you Hyderabad’s best gaming cafés and snooker hubs, and hosts the tournaments. The inner circle gets the invites first. Be in it.</p>
-        <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary btn-calm btn-block mt-4">Join the gamers community <span aria-hidden="true">→</span></a>
+        <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary btn-calm btn-block mt-4"><span className="text-center">Join the gamers community</span> <span aria-hidden="true">→</span></a>
       </div>
       <div className="quest-tear" aria-hidden="true" />
       <div className="quest-side" aria-hidden="true"><Mark size={22} /><span>KHEL-O</span></div>
@@ -46,8 +46,8 @@ export function KheloPartner() {
           <p className="muted mt-3">Khelo finds you Hyderabad’s best gaming cafés and snooker hubs, and hosts the tournaments. The inner circle gets the invites first. Be in it.</p>
         </div>
         <div className="mt-5 flex flex-col gap-3 md:mt-0 md:w-[300px] md:shrink-0">
-          <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary min-h-12 justify-center">Join the gamers community</a>
-          <a href={khelo.url} rel="noopener" className="btn min-h-12 justify-center">Visit khel-o.com <span aria-hidden="true">→</span></a>
+          <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary btn-calm min-h-12 justify-center"><span className="text-center">Join the gamers community</span></a>
+          <a href={khelo.url} rel="noopener" className="btn btn-calm min-h-12 justify-center">Visit khel-o.com <span aria-hidden="true">→</span></a>
         </div>
       </div>
     </section>

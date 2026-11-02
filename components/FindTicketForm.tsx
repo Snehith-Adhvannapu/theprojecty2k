@@ -22,7 +22,7 @@ export function FindTicketForm() {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="mt-6 flex flex-col gap-4">
+    <form onSubmit={submit} noValidate className="mt-4 flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="contact" className="text-sm font-medium">Email or mobile number used to buy</label>
         <input id="contact" className="field" value={contact} onChange={(e) => { setContact(e.target.value); if (state !== "loading") setState("idle"); }}

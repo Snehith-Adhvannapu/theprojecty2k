@@ -81,17 +81,34 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
   }
 
   if (s.status === "awaiting_review") {
+    const ref = orderId.replace(/-/g, "").slice(0, 8).toUpperCase();
+    const steps: [string, string, "done" | "now" | "next"][] = [
+      ["Payment details submitted", "We have your UTR and screenshot.", "done"],
+      ["We verify your payment", "Checked by hand against our bank account.", "now"],
+      ["Ticket sent to you", "A PDF by email, and on this page. We may also WhatsApp it.", "next"],
+    ];
     return (
-      <div role="status" aria-live="polite" className="card-plain slide-up mt-8 p-6">
-        <div className="flex items-center gap-3">
-          <span className="btn-spinner size-5 shrink-0 animate-spin rounded-full border-2 border-line-strong border-t-crimson" aria-hidden="true" />
-          <h1 className="text-xl">We&apos;re verifying your payment</h1>
-        </div>
-        <p className="muted mt-3 text-sm leading-relaxed">
-          Thanks. We check every payment against our bank account by hand. Your ticket appears on this page and is emailed to you as a PDF once it&apos;s confirmed. You can close this page.
-        </p>
+      <div role="status" aria-live="polite" className="slide-up mt-8">
+        <svg className="check-draw pop size-12 text-fg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.5" strokeWidth="1.2" /><path d="M7 12.5l3.2 3.2L17 9" /></svg>
+        <h1 className="mt-4 text-[26px] leading-tight">Submitted. We&apos;re verifying your payment.</h1>
+        <p className="muted mt-2">Don&apos;t worry, nothing more is needed from you. You can close this page; we&apos;ll get back to you soon.</p>
+        <ol className="card mt-6 divide-y divide-line">
+          {steps.map(([t, d, st], i) => (
+            <li key={t} className="flex gap-3 p-4">
+              <span className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${st === "done" ? "border-fg bg-fg text-bg" : st === "now" ? "border-crimson text-crimson" : "border-line-strong text-fg-muted"}`} aria-hidden="true">{st === "done" ? "✓" : i + 1}</span>
+              <span>
+                <span className={`block font-medium ${st === "next" ? "muted" : ""}`}>{t}{st === "now" && <span className="ml-2 text-xs font-semibold uppercase tracking-wider text-crimson">In progress</span>}</span>
+                <span className="muted block text-sm">{d}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="muted mt-4 text-sm">Order reference <span className="tnum text-fg">{ref}</span> · {paise(s.amountPaise)}</p>
         {offline && <p className="mt-3 text-sm text-danger">You seem to be offline. Reconnecting…</p>}
-        <p className="muted mt-3 text-sm">Taking long? {help} with your phone number.</p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Link href="/find-ticket" className="btn btn-calm btn-quiet min-h-12 flex-1">My tickets</Link>
+          {whatsapp ? <a href={whatsapp} className="btn btn-calm btn-quiet min-h-12 flex-1">Taking long? WhatsApp us</a> : <p className="muted self-center text-sm">Taking long? WhatsApp {e.organiser.whatsapp}</p>}
+        </div>
       </div>
     );
   }

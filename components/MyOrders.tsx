@@ -27,12 +27,10 @@ export function MyOrders() {
 
   if (!rows?.length) return null;
   return (
-    <section className="card mt-6 p-5" aria-label="Orders on this device">
-      <p className="label">On this device</p>
-      <ul className="mt-3 divide-y divide-line">
+    <ul className="card mt-6 divide-y divide-line" aria-label="Orders on this device">
         {rows.map((r) => (
-          <li key={r.id} className="py-3 first:pt-0 last:pb-0">
-            <Link href={`/order/${r.id}`} className="flex min-h-11 items-center justify-between gap-3">
+          <li key={r.id}>
+            <Link href={`/order/${r.id}`} className="flex min-h-14 items-center justify-between gap-3 p-4">
               <span>
                 <span className="block font-medium">{r.tickets[0]?.passName ?? "Order"} · {paise(r.amountPaise)}</span>
                 <span className="muted block text-sm">{LABEL[r.status] ?? r.status}{r.tickets[0] ? ` · ${r.tickets.map((t) => t.shortCode).join(", ")}` : ""}</span>
@@ -42,6 +40,5 @@ export function MyOrders() {
           </li>
         ))}
       </ul>
-    </section>
   );
 }

@@ -86,6 +86,6 @@ export async function ticketPdf(t: PdfTicket): Promise<Uint8Array> {
   const kl = await doc.embedPng(fs.readFileSync(path.join(process.cwd(), "public", "images", "khelo-logo.png")));
   page.drawImage(kl, { x: M, y: 17, width: 18, height: 18 });
   page.drawText(`Ticketing powered by ${e.khelo.name} · khel-o.com`, { x: M + 24, y: 26, size: 8, font: body, color: MUTED });
-  page.drawText("Gamers: join the Khelo gamers community (link in your ticket email).", { x: M + 24, y: 15, size: 7.5, font: body, color: MUTED });
+  page.drawText("Gamers: join the khel-o gamers community (link in your ticket email).", { x: M + 24, y: 15, size: 7.5, font: body, color: MUTED });
   return doc.save();
 }

@@ -23,11 +23,11 @@ export function KheloStrip() {
 /** The ask: gamers join the Khelo community. Short on purpose. */
 export function KheloQuest({ className = "" }: { className?: string }) {
   return (
-    <aside className={`quest ${className}`} aria-label="Join the Khelo gamers community">
+    <aside className={`quest ${className}`} aria-label="Join the khel-o gamers community">
       <div className="min-w-0 flex-1 p-5">
         <p className="eyebrow !text-xs">Gamers only</p>
         <p className="quest-h mt-2.5">Gamers get<br />in first.</p>
-        <p className="muted mt-3 text-[15px] leading-relaxed">Khelo finds you Hyderabad’s best gaming cafés and snooker hubs, and hosts the tournaments. The inner circle gets the invites first. Be in it.</p>
+        <p className="muted mt-3 text-[15px] leading-relaxed">khel-o finds you Hyderabad’s best gaming cafés and snooker hubs, and hosts the tournaments. The inner circle gets the invites first. Be in it.</p>
         <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary btn-calm btn-block mt-4"><span className="text-center">Join the gamers community</span> <span aria-hidden="true">→</span></a>
       </div>
       <div className="quest-tear" aria-hidden="true" />
@@ -38,12 +38,12 @@ export function KheloQuest({ className = "" }: { className?: string }) {
 
 export function KheloPartner() {
   return (
-    <section className="wrap pb-14" aria-label="Khelo, our partner">
+    <section className="wrap pb-14" aria-label="khel-o, our partner">
       <div className="border border-line bg-band p-6 md:flex md:items-center md:justify-between md:gap-10 md:p-8">
         <div className="max-w-[60ch]">
           <p className="eyebrow">Ticketing &amp; community partner</p>
           <p className="mt-3 flex items-center gap-3 font-display text-[54px] leading-none tracking-[0.06em]"><Mark size={44} />KHEL-O</p>
-          <p className="muted mt-3">Khelo finds you Hyderabad’s best gaming cafés and snooker hubs, and hosts the tournaments. The inner circle gets the invites first. Be in it.</p>
+          <p className="muted mt-3">khel-o finds you Hyderabad’s best gaming cafés and snooker hubs, and hosts the tournaments. The inner circle gets the invites first. Be in it.</p>
         </div>
         <div className="mt-5 flex flex-col gap-3 md:mt-0 md:w-[300px] md:shrink-0">
           <a href={khelo.communityUrl} target="_blank" rel="noopener" className="btn btn-primary btn-calm min-h-12 justify-center"><span className="text-center">Join the gamers community</span></a>

@@ -56,7 +56,7 @@ function questCard() {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #222;background:#111;margin:18px 0 0"><tr>
 <td style="padding:18px"><div style="font-size:11px;letter-spacing:4px;color:#e3302f;text-transform:uppercase">Gamers only</div>
 <div style="font:700 30px/1.05 Impact,Arial,sans-serif;letter-spacing:1px;color:#f1eeea;margin:8px 0">GAMERS GET IN FIRST.</div>
-<div style="font-size:15px;line-height:1.5;color:#cbced2">Khelo finds you Hyderabad&rsquo;s best gaming caf&eacute;s and snooker hubs, and hosts the tournaments. The inner circle gets the invites first. Be in it.</div>
+<div style="font-size:15px;line-height:1.5;color:#cbced2">khel-o finds you Hyderabad&rsquo;s best gaming caf&eacute;s and snooker hubs, and hosts the tournaments. The inner circle gets the invites first. Be in it.</div>
 <a href="${k.communityUrl}" style="display:block;margin-top:14px;background:#e3302f;color:#fff;text-align:center;font-weight:700;padding:14px;text-decoration:none">Join the gamers community &rarr;</a></td>
 <td width="44" style="border-left:2px dashed #333;text-align:center;color:#e3302f;font:700 18px Impact,Arial,sans-serif;letter-spacing:3px">K<br>H<br>E<br>L<br>-<br>O</td></tr></table>`;
 }

@@ -109,9 +109,9 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
         </ol>
         <p className="muted mt-4 text-sm">Order reference <span className="tnum text-fg">{ref}</span> · {paise(s.amountPaise)}</p>
         {offline && <p className="mt-3 text-sm text-danger">You seem to be offline. Reconnecting…</p>}
-        <p className="mt-8 text-[17px] font-medium leading-snug">While we review your ticket, do the side quest if you’re a gamer, and check out Khelo.</p>
+        <p className="mt-8 text-[17px] font-medium leading-snug">While we review your ticket, do the side quest if you’re a gamer, and check out khel-o.</p>
         <KheloQuest className="mt-3" />
-        <a href={e.khelo.url} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet btn-block mt-3">Check out Khelo <span aria-hidden="true">↗</span></a>
+        <a href={e.khelo.url} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet btn-block mt-3">Check out khel-o <span aria-hidden="true">↗</span></a>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link href="/find-ticket" className="btn btn-calm btn-quiet min-h-12 flex-1">My tickets</Link>
           {whatsapp ? <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet min-h-12 flex-1">Taking long? WhatsApp us</a> : <p className="muted self-center text-sm">Taking long? WhatsApp {e.organiser.whatsapp}</p>}

@@ -52,7 +52,7 @@ export const eventConfig = {
     reviewHoldHours: 24,
   },
   khelo: {
-    name: "Khelo",
+    name: "khel-o",
     url: "https://khel-o.com",
     logo: "/images/khelo-logo.png",
     // Khelo's WhatsApp community page for Project Y2K gamers.

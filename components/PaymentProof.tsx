@@ -132,6 +132,14 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
           </div>
         </div>
         <p className="muted mt-4 text-[13px]">On a phone, tap &ldquo;Open my UPI app&rdquo;. On a computer, scan the QR with any UPI app.</p>
+        <details className="mt-4 border-t border-line pt-3">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm">QR not working? Use our merchant QR</summary>
+          <div className="mt-3 flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/merchant-qr.png" alt="Merchant UPI QR code" width={200} height={200} className="rounded-sm bg-white" />
+            <p className="muted text-[13px]">Scan this in any UPI app, then <strong className="text-fg">type the amount yourself: {paise(amountPaise)}</strong>. Add the reference {ref} as the note if the app allows it. Your payment is matched by the UTR you enter below.</p>
+          </div>
+        </details>
       </section>
 
       <form onSubmit={submit} noValidate className="card mt-4 p-5" aria-label="Payment proof">

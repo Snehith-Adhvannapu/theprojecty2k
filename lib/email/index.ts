@@ -79,10 +79,11 @@ ${blocks}
   return { to, subject: `Your ${eventConfig.name} ticket`, html: shell("Your ticket", inner), text, attachments };
 }
 
-function receivedMail(to: string): Mail {
+function receivedMail(to: string, orderId: string): Mail {
   const inner = `<p>We received your payment details. We check every payment against our bank account by hand, so this can take a little while. You'll get another email with your ticket as soon as it's confirmed.</p>
+<p><a href="${appUrl()}/order/${orderId}" style="display:inline-block;background:#e3302f;color:#fff;text-decoration:none;padding:12px 18px;font-weight:700">View your order</a></p>
 <p>Nothing more is needed from you. Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>`;
-  return { to, subject: `${eventConfig.name}: payment received, verifying`, html: shell("We're verifying your payment", inner), text: "We received your payment details and are verifying them. You will get your ticket by email once it is confirmed." };
+  return { to, subject: `${eventConfig.name}: payment received, verifying`, html: shell("We're verifying your payment", inner), text: `We received your payment details and are verifying them. You will get your ticket by email once it is confirmed. Order page: ${appUrl()}/order/${orderId}` };
 }
 
 async function rejectedMail(orderId: string, to: string): Promise<Mail> {
@@ -95,6 +96,13 @@ ${again
     : "<p>This order is closed. If you were charged, WhatsApp us with your UTR and we will sort it out.</p>"}
 <p>Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>`;
   return { to, subject: `${eventConfig.name}: we couldn't confirm your payment`, html: shell("Payment not confirmed", inner), text: `We couldn't confirm your payment: ${o?.review_note ?? ""}. ${again ? link : ""}` };
+}
+
+function orderStatusMail(orderId: string, to: string): Mail {
+  const link = `${appUrl()}/order/${orderId}`;
+  const inner = `<p>Your order isn't confirmed yet. Open it to pay, submit your UTR and screenshot, or check whether we've verified it. Your ticket is emailed once the payment is verified.</p>
+<p><a href="${link}" style="display:inline-block;background:#e3302f;color:#fff;text-decoration:none;padding:12px 18px;font-weight:700">Open your order</a></p>`;
+  return { to, subject: `${eventConfig.name}: your order`, html: shell("Your order", inner), text: `Your order page: ${link}` };
 }
 
 function refundMail(to: string): Mail {
@@ -115,7 +123,7 @@ export async function flushOutbox(orderId?: string): Promise<void> {
     try {
       const mail =
         r.kind === "needs_refund" ? refundMail(r.to_email)
-        : r.kind === "received" ? receivedMail(r.to_email)
+        : r.kind === "received" ? receivedMail(r.to_email, r.order_id)
         : r.kind === "rejected" ? await rejectedMail(r.order_id, r.to_email)
         : await ticketMail(r.order_id, r.to_email);
       await deliver(mail);
@@ -133,13 +141,13 @@ export async function flushOutbox(orderId?: string): Promise<void> {
 /** "Find my ticket": always behaves the same to the caller; at most 3 per address per hour. */
 export async function sendFindMyTicket(email: string | null, phone: string | null): Promise<void> {
   const rows = await query(
-    `SELECT DISTINCT o.id, o.buyer_email FROM orders o
-      WHERE o.status = 'paid' AND (($1::text IS NOT NULL AND o.buyer_email = $1) OR ($2::text IS NOT NULL AND o.buyer_phone = $2))`,
+    `SELECT DISTINCT o.id, o.buyer_email, o.status FROM orders o
+      WHERE o.status IN ('paid','awaiting_review','pending') AND o.created_at > now() - interval '60 days' AND (($1::text IS NOT NULL AND o.buyer_email = $1) OR ($2::text IS NOT NULL AND o.buyer_phone = $2))`,
     [email, phone],
   );
-  const byEmail = new Map<string, string[]>();
-  for (const r of rows) byEmail.set(r.buyer_email, [...(byEmail.get(r.buyer_email) ?? []), r.id]);
-  for (const [to, orderIds] of byEmail) {
+  const byEmail = new Map<string, { id: string; status: string }[]>();
+  for (const r of rows) byEmail.set(r.buyer_email, [...(byEmail.get(r.buyer_email) ?? []), { id: r.id, status: r.status }]);
+  for (const [to, orders] of byEmail) {
     const [{ n }] = await query(
       "SELECT count(*)::int AS n FROM email_outbox WHERE to_email = $1 AND kind = 'find' AND created_at > now() - interval '1 hour'",
       [to],
@@ -147,7 +155,7 @@ export async function sendFindMyTicket(email: string | null, phone: string | nul
     if (n >= 3) continue;
     await query("INSERT INTO email_outbox (to_email, kind, status) VALUES ($1,'find','sent')", [to]);
     try {
-      const mails = await Promise.all(orderIds.map((id) => ticketMail(id, to)));
+      const mails = await Promise.all(orders.map((o) => (o.status === "paid" ? ticketMail(o.id, to) : Promise.resolve(orderStatusMail(o.id, to)))));
       await deliver({ ...mails[0], subject: `Your ${eventConfig.name} ticket link`,
         html: mails.map((m) => m.html).join("<hr>"), text: mails.map((m) => m.text).join("\n"),
         attachments: mails.flatMap((m) => m.attachments ?? []) });

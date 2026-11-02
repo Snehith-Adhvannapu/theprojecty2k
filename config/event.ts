@@ -38,7 +38,6 @@ export const eventConfig = {
   policy: {
     // Pick one and fill the blanks in the Refund page. State it plainly.
     refundPolicy: "Tickets are non-refundable",
-    refundDays: "[X]",
     transferable: "No, tickets are non-transferable",
     reentry: "No re-entry",
     dataRetention: "until the event accounts are settled",
@@ -46,8 +45,8 @@ export const eventConfig = {
   },
   // Manual UPI payment. Set NEXT_PUBLIC_UPI_ID / NEXT_PUBLIC_UPI_PAYEE in the host env, or edit here.
   payment: {
-    upiId: process.env.NEXT_PUBLIC_UPI_ID || "[UPI ID]",
-    payeeName: process.env.NEXT_PUBLIC_UPI_PAYEE || "[PAYEE NAME]",
+    upiId: process.env.NEXT_PUBLIC_UPI_ID || "Q022698137@ybl",
+    payeeName: process.env.NEXT_PUBLIC_UPI_PAYEE || "Project Y2K",
     reviewHoldHours: 24,
   },
   khelo: { name: "Khelo", url: "https://khel-o.com" },

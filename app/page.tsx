@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { eventConfig as e } from "@/config/event";
 import { Logo } from "@/components/Logo";
@@ -8,23 +9,22 @@ import { SiteFooter } from "@/components/SiteFooter";
 export const dynamic = "force-static";
 
 const faqs: [string, string][] = [
-  ["How do I get my ticket?", "It appears on screen the moment your payment is confirmed, and a copy goes to your email."],
+  ["How do I buy a ticket?", "Pick a pass, enter your details, and pay the exact amount by UPI. Then enter the UTR (reference number) from your payment and upload a screenshot."],
+  ["When do I get my ticket?", "We check every payment against our bank account by hand, then email your ticket as a PDF. You'll also see it on your order page. Please allow some time; it is not instant."],
   [
-    "I paid but don't see my ticket.",
-    `Wait two minutes and refresh; confirmation can take a moment. Still nothing? WhatsApp ${e.organiser.whatsapp} with your phone number and payment screenshot. If you were charged, you get a ticket or a refund.`,
+    "I paid but haven't got my ticket.",
+    `Check your spam folder, then use “Find my ticket” in the footer. Still nothing? WhatsApp ${e.organiser.whatsapp} with your phone number and payment screenshot.`,
   ],
-  ["I lost my ticket or the email.", "Use “Find my ticket” on this site, or we look you up at the door with your name, phone number and ID."],
+  ["I lost my ticket or the email.", "Use “Find my ticket” in the footer with the email or phone number you booked with, and we'll email your ticket links again. Or we look you up at the door with your name, phone number and ID."],
   ["Who can come?", `${e.ageLimit}. Bring a valid government photo ID.`],
   ["Is my ticket transferable?", `${e.policy.transferable}. Each QR works once. Whoever's code is scanned first gets in, so don't post it publicly.`],
   ["What about refunds?", `${e.policy.refundPolicy}. Full policy linked in the footer.`],
 ];
 
 const photos = [
-  { label: "Photo 1 · wide crowd shot", cls: "basis-[420px] flex-[2] aspect-[3/2]" },
-  { label: "Photo 2 · portrait, flash", cls: "basis-[240px] flex-1 aspect-[3/4]" },
-  { label: "Photo 3 · portrait", cls: "basis-[240px] flex-1 aspect-[3/4]" },
-  { label: "Photo 4 · detail", cls: "basis-[240px] flex-1 aspect-square" },
-  { label: "Photo 5 · dance floor", cls: "basis-[240px] flex-1 aspect-square" },
+  { src: "/images/last-blue.webp", w: 900, h: 1200, alt: "Blue beams cutting through the dark in front of the Project Y2K screen", cls: "" },
+  { src: "/images/last-smoke.webp", w: 900, h: 1200, alt: "Smoke and the Project Y2K logo on the big screen, in black and white", cls: "" },
+  { src: "/images/last-dj.webp", w: 720, h: 1280, alt: "The DJ under the Project Y2K screen with the crowd in front", cls: "col-span-2 sm:col-span-1 [&_img]:aspect-[4/3] sm:[&_img]:aspect-[3/4]" },
 ];
 
 export default function Home() {
@@ -68,14 +68,12 @@ export default function Home() {
               <a href="#last" className="inline-flex min-h-12 items-center text-[13px] uppercase tracking-[0.25em]">See last time</a>
             </div>
             <p className="in muted mt-5 text-[13px]" style={{ "--i": 6 } as React.CSSProperties}>
-              Instant digital ticket · Secure checkout · Refund policy in plain English
+              Pay by UPI · PDF ticket by email once verified · Non-refundable, no re-entry
             </p>
           </div>
           <div className="in relative mx-auto aspect-[4/5] w-full max-w-[460px] flex-[1_1_320px]" style={{ "--i": 3 } as React.CSSProperties}>
             <div className="hero-glow absolute -inset-6 -z-10" style={{ background: "var(--glow)", opacity: 0.35 }} aria-hidden="true" />
-            <div className="ph h-full">
-              <p>Hero photo · best crowd shot, flash on, from last time</p>
-            </div>
+            <Image src="/images/hero.webp" alt="Red light beams over the crowd and the Project Y2K screen at last year's party" width={960} height={1280} priority sizes="(min-width: 768px) 460px, 90vw" className="h-full w-full rounded-sm border border-line object-cover" />
           </div>
         </div>
       </section>
@@ -97,30 +95,41 @@ export default function Home() {
 
       <section aria-label="Why you can trust this" className="band border-t-0">
         <div className="wrap flex flex-wrap justify-between gap-x-12 gap-y-5 py-7 text-sm">
-          <p><span className="text-crimson">01</span>&nbsp; Ticket appears the moment payment is confirmed</p>
-          <p><span className="text-crimson">02</span>&nbsp; Fees shown before you pay. No surprises</p>
+          <p><span className="text-crimson">01</span>&nbsp; Every payment checked by a real person</p>
+          <p><span className="text-crimson">02</span>&nbsp; Exact price shown before you pay. No surprises</p>
           <p><span className="text-crimson">03</span>&nbsp; Real people on WhatsApp: {e.organiser.whatsapp}</p>
         </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section id="how" aria-labelledby="how-h" className="wrap section reveal">
+        <p className="eyebrow">Simple</p>
+        <h2 id="how-h" className="h2 mt-4">How to get <em>your ticket.</em></h2>
+        <ol className="mt-10 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Pick a pass", "Choose your pass and enter your name, phone and email."],
+            ["Pay by UPI", "Scan the QR or tap “Open my UPI app”. Pay the exact amount shown."],
+            ["Send proof", "Enter the 12-digit UTR from your payment and upload a screenshot."],
+            ["Get your ticket", "We verify your payment, then email your PDF ticket. Show the QR at the door."],
+          ].map(([t, d], i) => (
+            <li key={t} className="border-t border-line pt-4">
+              <p className="font-display text-3xl text-crimson">{String(i + 1).padStart(2, "0")}</p>
+              <p className="mt-2 text-lg font-semibold">{t}</p>
+              <p className="muted mt-1 text-sm leading-relaxed">{d}</p>
+            </li>
+          ))}
+        </ol>
       </section>
 
       {/* LAST TIME */}
       <section id="last" className="wrap section reveal">
         <p className="eyebrow">The last one</p>
-        <h2 className="h2 mt-4">Last time, <em>as it happened.</em></h2>
-        <div className="mt-10 flex flex-wrap gap-3">
+        <h2 className="h2 mt-4">Y2K 1.0, <em>The Index.</em></h2>
+        <p className="muted mt-4 max-w-[60ch]">At Illuzion: a DJ all day, matchmaking, and a photo booth running throughout.</p>
+        <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {photos.map((p) => (
-            <div key={p.label} className={`ph min-w-0 ${p.cls}`}><p>{p.label}</p></div>
-          ))}
-          <div className="ph aspect-video min-w-0 flex-[2] basis-[420px]" style={{ borderColor: "var(--blood)" }}>
-            <p style={{ color: "var(--crimson)" }}>Clip · 10 to 15 sec, muted, loads when in view</p>
-          </div>
-        </div>
-        <p className="muted mt-6 max-w-[60ch]">[NUMBER] people came. [Use real numbers only. Delete this line if you can&apos;t back it up.]</p>
-        <p className="label mt-14">From the people who came</p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          {["IG story screenshot, with permission", "IG story screenshot, with permission", "DM or comment, with permission"].map((t, i) => (
-            <div key={i} className="ph aspect-[9/16] min-w-0 flex-[0_1_180px]" style={{ background: "var(--card)" }}>
-              <p className="normal-case tracking-normal">{t}</p>
+            <div key={p.src} className={`min-w-0 ${p.cls}`}>
+              <Image src={p.src} alt={p.alt} width={p.w} height={p.h} loading="lazy" sizes="(min-width: 768px) 33vw, 90vw" className="aspect-[3/4] w-full rounded-sm border border-line object-cover" />
             </div>
           ))}
         </div>
@@ -152,28 +161,24 @@ export default function Home() {
       <section id="passes" className="wrap section scroll-mt-4">
         <p className="eyebrow">Passes</p>
         <h2 className="h2 mt-4">Pick your <em>pass.</em></h2>
-        <p className="muted mt-4 max-w-[56ch]">Any fee is shown before you pay. Your ticket appears on screen as soon as payment is confirmed.</p>
+        <p className="muted mt-4 max-w-[56ch]">The price you see is the price you pay. Your ticket is emailed once we've verified your payment.</p>
         <PassPicker />
         <ol className="muted mt-10 flex flex-wrap gap-x-10 gap-y-4 text-sm">
-          <li><span className="text-crimson">1</span>&nbsp; Pay securely</li>
-          <li><span className="text-crimson">2</span>&nbsp; Ticket appears on screen once payment is confirmed</li>
-          <li><span className="text-crimson">3</span>&nbsp; A copy lands in your email</li>
+          <li><span className="text-crimson">1</span>&nbsp; Pay the exact amount by UPI</li>
+          <li><span className="text-crimson">2</span>&nbsp; Enter the UTR and upload your screenshot</li>
+          <li><span className="text-crimson">3</span>&nbsp; We verify it, then email your PDF ticket</li>
         </ol>
       </section>
 
       {/* ABOUT */}
       <section className="band border-b-0">
-        <div className="wrap section flex flex-wrap items-center gap-x-16 gap-y-10 reveal">
-          <div className="ph aspect-[4/5] w-full max-w-[440px] flex-[1_1_300px]"><p>Organisers · real faces, real names</p></div>
-          <div className="flex-[1_1_360px]">
-            <p className="eyebrow">About</p>
-            <h2 className="h2 mt-4">Who&apos;s <em>behind it.</em></h2>
-            <p className="muted mt-6 max-w-[52ch]">[2 TO 4 TRUE SENTENCES: who you are, the last party, why you&apos;re doing it again.]</p>
-            <p className="muted mt-4 max-w-[52ch]">{e.organiser.name} · WhatsApp {e.organiser.whatsapp} · {e.organiser.instagram}</p>
-            <p className="mt-6 text-sm">
-              Ticketing powered by <a href={e.khelo.url} className="border-b border-blood">{e.khelo.name}</a>, [ONE LINE ABOUT THE GAMING CAFE].
-            </p>
-          </div>
+        <div className="wrap section reveal">
+          <p className="eyebrow">About</p>
+          <h2 className="h2 mt-4">Who&apos;s <em>behind it.</em></h2>
+          <p className="muted mt-6 max-w-[56ch]">
+            Project Y2K is a party series. Y2K 1.0, The Index, was held at Illuzion. This year it&apos;s The Matrix: Hyderabad&apos;s first theatre rave, at {e.venue.name}.
+          </p>
+          <p className="muted mt-4 max-w-[56ch]">{e.organiser.name} · WhatsApp {e.organiser.whatsapp} · {e.organiser.instagram}</p>
         </div>
       </section>
 

@@ -74,7 +74,7 @@ export default function Home() {
               Already booked? <Link href="/find-ticket" className="border-b border-blood">Find my ticket</Link>
             </p>
           </div>
-          <div className="in relative order-first mx-auto aspect-[920/1140] w-full max-w-[460px] flex-[1_1_320px] md:order-none" style={{ "--i": 3 } as React.CSSProperties}>
+          <div className="in relative order-first aspect-[920/1140] w-full max-w-[460px] flex-[1_1_320px]" style={{ "--i": 3 } as React.CSSProperties}>
             <div className="hero-glow absolute -inset-6 -z-10" style={{ background: "var(--glow)", opacity: 0.35 }} aria-hidden="true" />
             <Image src="/images/hero-poster.webp" alt="Poster: Project Y2K x Hyd High presents The Matrix. Hyderabad's first ever theatre rave. 15.11.2026, Prasads IMAX, 12 noon to 5PM." width={920} height={1140} priority sizes="(min-width: 768px) 460px, 90vw" className="h-full w-full rounded-sm border border-line object-cover" />
           </div>

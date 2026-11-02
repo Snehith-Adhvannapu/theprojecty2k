@@ -30,14 +30,16 @@ const photos = [
 export default function Home() {
   return (
     <main id="top" className="overflow-x-clip">
-      <header className="wrap flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-line py-2">
-        <Logo />
-        <nav aria-label="Primary" className="flex flex-wrap items-center gap-x-7">
-          <a href="#last" className="muted inline-flex min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-fg">Last time</a>
-          <a href="#faq" className="muted inline-flex min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-fg">FAQ</a>
-          <Link href="/find-ticket" className="inline-flex min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-crimson">My ticket</Link>
-          <a href="#passes" className="btn min-h-11 px-5 text-xs">Get passes</a>
-        </nav>
+      <header className="sticky top-0 z-30 border-b border-line bg-bg">
+        <div className="wrap flex items-center justify-between gap-4 py-1.5">
+          <Logo />
+          <nav aria-label="Primary" className="flex items-center gap-x-5 sm:gap-x-7">
+            <a href="#last" className="muted hidden min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-fg sm:inline-flex">Last time</a>
+            <a href="#faq" className="muted hidden min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-fg sm:inline-flex">FAQ</a>
+            <Link href="/find-ticket" className="inline-flex min-h-11 items-center text-xs uppercase tracking-[0.2em] transition-colors hover:text-crimson">My ticket</Link>
+            <a href="#passes" className="btn min-h-11 px-4 text-xs sm:px-5">Get passes</a>
+          </nav>
+        </div>
       </header>
 
       {/* HERO: the one place with theatre */}

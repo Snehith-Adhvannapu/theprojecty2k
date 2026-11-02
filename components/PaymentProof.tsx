@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { eventConfig as e } from "@/config/event";
 import { paise } from "@/lib/normalize";
 
-const MAX_SIDE = 1400;
+const MAX_SIDE = 1100;
 const MAX_BYTES = 1_400_000;
 
 /** Shrinks a phone screenshot to a few hundred KB in the browser. Falls back to the raw file if it's already small. */
@@ -17,7 +17,7 @@ async function compress(file: File): Promise<Blob> {
     c.width = Math.round(bmp.width * scale);
     c.height = Math.round(bmp.height * scale);
     c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
-    for (const q of [0.78, 0.6, 0.45]) {
+    for (const q of [0.7, 0.55, 0.4]) {
       const blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/jpeg", q));
       if (blob && blob.size <= MAX_BYTES) return blob;
     }
@@ -62,6 +62,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
   const [copied, setCopied] = useState(false);
   const [left, setLeft] = useState("");
   const input = useRef<HTMLInputElement>(null);
+  const packed = useRef<Promise<Blob> | null>(null);
 
   useEffect(() => {
     const tick = () => {
@@ -92,7 +93,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
     if (!file) { setPhase("error"); setErr("Attach your payment screenshot."); return; }
     setPhase("loading");
     try {
-      const blob = await compress(file);
+      const blob = await (packed.current ?? compress(file));
       const form = new FormData();
       form.set("utr", utr.trim());
       form.set("proof", blob, "proof.jpg");
@@ -155,7 +156,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium" id="shot-l">Payment screenshot</span>
             <input ref={input} type="file" accept="image/*" className="sr-only" aria-labelledby="shot-l" tabIndex={-1}
-              onChange={(ev) => { setFile(ev.target.files?.[0] ?? null); setErr(""); }} disabled={busy} />
+              onChange={(ev) => { const f = ev.target.files?.[0] ?? null; setFile(f); setErr(""); packed.current = f ? compress(f) : null; packed.current?.catch(() => {}); }} disabled={busy} />
             <button type="button" className="btn btn-quiet btn-calm min-h-12 justify-center" onClick={() => input.current?.click()} disabled={busy} aria-describedby="shot-l">
               {file ? "Change screenshot" : "Choose screenshot"}
             </button>

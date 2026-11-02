@@ -50,7 +50,12 @@ export default function Home() {
           <div className="min-w-0 flex-[1_1_480px]">
             <p className="in eyebrow" style={{ "--i": 0 } as React.CSSProperties}>✦ {e.dateLabel}</p>
             <h1 className="sr-only">Project Y2K26: The Matrix</h1>
-            <p className="in muted mt-5 max-w-[38ch] text-lg md:text-xl" style={{ "--i": 3 } as React.CSSProperties}>{e.description}</p>
+            <div className="in mt-5 max-w-[46ch]" style={{ "--i": 3 } as React.CSSProperties}>
+              <p className="text-[22px] font-semibold leading-snug">{e.about.heading}</p>
+              <p className="mt-3 text-lg font-medium">{e.about.lead}</p>
+              {e.about.paras.map((t) => <p key={t} className="muted mt-3 text-[17px] leading-relaxed">{t}</p>)}
+              <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-crimson">{e.about.closer}</p>
+            </div>
             <dl className="in mt-8 flex flex-wrap gap-x-10 gap-y-5" style={{ "--i": 4 } as React.CSSProperties}>
               {[
                 ["Date", "15.11.2026"],

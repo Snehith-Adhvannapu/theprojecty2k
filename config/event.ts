@@ -5,6 +5,17 @@
 export const eventConfig = {
   name: "Project Y2K",
   tagline: "Live beyond reality.",
+  // Landing copy, shown under the poster.
+  about: {
+    heading: "Hyderabad’s First-Ever Theatre Rave",
+    lead: "Forget everything you know about a party.",
+    paras: [
+      "PROJECT Y2K × HYD HIGH presents THE MATRIX — an entirely new dimension of sound, visuals and energy.",
+      "Step inside a cinematic world where the boundaries between music and visuals disappear. Experience electrifying beats, immersive visuals, powerful sound and an atmosphere designed to take you beyond the ordinary.",
+      "This isn’t just another night out. It’s a reality of its own.",
+    ],
+    closer: "One screen. One sound. One unreal experience.",
+  },
   description: "The Matrix: Hyderabad's first theatre rave. Y2K 1.0, The Index, at Illuzion had a DJ all day, matchmaking and a photo booth running throughout.",
   date: "2026-11-15", // fixed by the brief
   dateLabel: "15 November 2026",

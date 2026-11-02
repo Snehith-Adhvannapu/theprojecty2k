@@ -99,13 +99,15 @@ export async function listPasses() {
   return (
     await query(
       `SELECT p.*, COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id
-                              WHERE oi.pass_type_id = p.id AND o.status = 'paid'), 0)::int AS sold
+                              WHERE oi.pass_type_id = p.id AND o.status = 'paid'), 0)::int AS sold,
+            COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id
+                       WHERE oi.pass_type_id = p.id AND o.status IN ('pending','awaiting_review') AND o.expires_at > now()), 0)::int AS held
          FROM pass_types p ORDER BY p.sort, p.price_paise`,
     )
   ).map((p) => ({
     id: p.id as string, name: p.name as string, description: p.description as string,
     pricePaise: p.price_paise as number, feePaise: p.fee_paise as number, totalQty: p.total_qty as number,
-    admits: p.admits as number, active: p.active as boolean, sort: p.sort as number, sold: p.sold as number,
+    admits: p.admits as number, active: p.active as boolean, sort: p.sort as number, sold: p.sold as number, held: p.held as number,
     salesStart: p.sales_start ? new Date(p.sales_start).toISOString() : null,
     salesEnd: p.sales_end ? new Date(p.sales_end).toISOString() : null,
   }));

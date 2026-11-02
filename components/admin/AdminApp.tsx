@@ -16,7 +16,7 @@ interface Summary {
   health: { pending_orders: number; awaiting_review: number; failed_emails: number; pending_emails: number; lastWebhook: string | null; fakePayments: boolean };
 }
 interface Guest { id: string; shortCode: string; name: string; phone: string; email: string | null; instagram: string | null; passName: string; admits: number; status: string; source: string; orderId: string | null; usedAt: string | null; usedBy: string | null }
-interface Pass { id: string; name: string; description: string; pricePaise: number; feePaise: number; totalQty: number; admits: number; active: boolean; sort: number; sold: number; salesStart: string | null; salesEnd: string | null }
+interface Pass { id: string; name: string; description: string; pricePaise: number; feePaise: number; totalQty: number; admits: number; active: boolean; sort: number; sold: number; held?: number; salesStart: string | null; salesEnd: string | null }
 
 export function AdminApp({ name }: { name: string }) {
   const [tab, setTab] = useState<Tab>("Overview");
@@ -225,11 +225,16 @@ function PassRow({ p, fresh, onSaved }: { p: Pass; fresh?: boolean; onSaved: (m:
       <div className={`${cell} min-w-[120px] flex-1`}><label className="label">Price ₹</label><input className="field" inputMode="decimal" value={f.price} onChange={set("price")} /></div>
       <div className={`${cell} min-w-[100px] flex-1`}><label className="label">Fee ₹</label><input className="field" inputMode="decimal" value={f.fee} onChange={set("fee")} /></div>
       <div className={`${cell} min-w-[100px] flex-1`}><label className="label">Total qty</label><input className="field" inputMode="numeric" value={f.total} onChange={set("total")} /></div>
+      <div className="flex basis-full flex-wrap items-center gap-2" role="group" aria-label="Change total quantity">
+        {[-10, -1, 1, 10].map((d) => (
+          <button key={d} type="button" className="btn btn-quiet btn-calm min-h-11 px-4 text-sm tnum" onClick={() => setF({ ...f, total: String(Math.max(0, (parseInt(f.total || "0", 10) || 0) + d)) })}>{d > 0 ? `+${d}` : d}</button>
+        ))}
+        {!fresh && <span className="muted text-sm tnum">{p.sold} sold · {p.held ?? 0} held · {Math.max(0, (parseInt(f.total || "0", 10) || 0) - p.sold - (p.held ?? 0))} left. Save to apply.</span>}
+      </div>
       <div className={`${cell} min-w-[90px] flex-1`}><label className="label">Admits</label><input className="field" inputMode="numeric" value={f.admits} onChange={set("admits")} /></div>
       <div className={`${cell} basis-full`}><label className="label">Description</label><input className="field" value={f.description} onChange={set("description")} /></div>
       <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--blood)]" checked={f.active} onChange={set("active")} /> On sale</label>
-      {!fresh && <span className="muted text-sm tnum">{p.sold} sold</span>}
-      <button className="btn btn-primary btn-calm ml-auto min-h-11 px-5 text-sm" onClick={save} disabled={state === "loading" || !f.name}>
+            <button className="btn btn-primary btn-calm ml-auto min-h-11 px-5 text-sm" onClick={save} disabled={state === "loading" || !f.name}>
         {state === "loading" && <span className="spinner" aria-hidden="true" />}{state === "ok" ? "Saved" : fresh ? "Add pass" : "Save"}
       </button>
       {m && <p role="alert" className="basis-full text-sm text-danger">{m}</p>}

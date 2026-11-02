@@ -11,7 +11,9 @@ const SESSION_HOURS = 14;
 const MAX_FAILS = 5;
 const LOCK_MINUTES = 15;
 
-export type Role = "admin" | "volunteer";
+export type Role = "superadmin" | "admin" | "volunteer";
+/** Admin powers: the visible admins and the hidden superadmin. */
+export const isAdminRole = (r: string) => r === "admin" || r === "superadmin";
 export interface Staff {
   id: string;
   email: string;
@@ -97,7 +99,7 @@ export async function getStaff(): Promise<Staff | null> {
 export async function requireRole(role: Role): Promise<Staff> {
   const s = await getStaff();
   if (!s) throw new AppError("UNAUTHENTICATED", "Please sign in.", 401);
-  if (role === "admin" && s.role !== "admin") throw new AppError("FORBIDDEN", "Not allowed.", 403);
+  if (role === "admin" && !isAdminRole(s.role)) throw new AppError("FORBIDDEN", "Not allowed.", 403);
   return s;
 }
 

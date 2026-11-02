@@ -145,7 +145,7 @@ export async function upsertPass(actorId: string, p: PassInput) {
 }
 
 export async function listVolunteers() {
-  return (await query("SELECT id, email, name, role, active, created_at FROM staff_users ORDER BY role, name")).map((u) => ({
+  return (await query("SELECT id, email, name, role, active, created_at FROM staff_users WHERE role <> 'superadmin' ORDER BY role, name")).map((u) => ({
     id: u.id as string, email: u.email as string, name: u.name as string, role: u.role as string, active: u.active as boolean,
   }));
 }
@@ -165,7 +165,7 @@ export async function createVolunteer(actorId: string, v: { email: string; name:
 export async function setStaffActive(actorId: string, staffId: string, active: boolean) {
   if (staffId === actorId) throw new AppError("SELF", "You can't change your own access.", 400);
   const [u] = await query("SELECT role, active FROM staff_users WHERE id = $1", [staffId]);
-  if (!u) throw new AppError("NOT_FOUND", "Account not found.", 404);
+  if (!u || u.role === "superadmin") throw new AppError("NOT_FOUND", "Account not found.", 404);
   if (!active && u.role === "admin" && u.active) {
     const [{ n }] = await query("SELECT count(*)::int AS n FROM staff_users WHERE role = 'admin' AND active AND id <> $1", [staffId]);
     if (n < 1) throw new AppError("LAST_ADMIN", "There must be at least one active admin.", 400);
@@ -177,7 +177,7 @@ export async function setStaffActive(actorId: string, staffId: string, active: b
 
 /** Admin sets a new password (forgotten password, handover). Signs the person out everywhere and clears any lockout. */
 export async function resetStaffPassword(actorId: string, staffId: string, password: string) {
-  const [u] = await query("SELECT 1 FROM staff_users WHERE id = $1", [staffId]);
+  const [u] = await query("SELECT 1 FROM staff_users WHERE id = $1 AND role <> 'superadmin'", [staffId]);
   if (!u) throw new AppError("NOT_FOUND", "Account not found.", 404);
   await query("UPDATE staff_users SET password_hash = $2, failed_count = 0, locked_until = NULL WHERE id = $1", [staffId, hashPassword(password)]);
   await query("DELETE FROM sessions WHERE staff_id = $1", [staffId]);

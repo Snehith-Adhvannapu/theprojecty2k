@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const { next } = await searchParams;
   const s = await getStaff();
-  if (s) redirect(next && next.startsWith("/") && !next.startsWith("//") ? next : s.role === "admin" ? "/admin" : "/scan");
+  if (s) redirect(next && next.startsWith("/") && !next.startsWith("//") ? next : (s.role === "admin" || s.role === "superadmin") ? "/admin" : "/scan");
   return (
     <CalmShell back={{ href: "/", label: "Home" }}>
       <h1 className="mt-7 text-[28px] leading-[1.15]">Staff sign in</h1>

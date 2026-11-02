@@ -20,7 +20,7 @@ export function LoginForm({ next }: { next?: string }) {
       if (!j.ok) { setState("error"); setMsg(j.error?.message ?? "Couldn't sign in."); return; }
       setState("ok");
       const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
-      router.replace(safe ?? (j.data.role === "admin" ? "/admin" : "/scan"));
+      router.replace(safe ?? ((j.data.role === "admin" || j.data.role === "superadmin") ? "/admin" : "/scan"));
       router.refresh();
     } catch {
       setState("error");

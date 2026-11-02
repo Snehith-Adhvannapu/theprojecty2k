@@ -2,6 +2,10 @@
 import ExcelJS from "exceljs";
 import { allGuests, checkinHistory } from "@/lib/admin";
 import { formatFullIST } from "@/lib/time";
+import { listContacts, type StatusFilter } from "@/lib/admin/contacts";
+
+export interface ExportOpts { status?: StatusFilter; unique?: boolean }
+type Kind = "attendees" | "checkins" | "contacts";
 
 // Spreadsheet formula injection: a name like "=HYPERLINK(...)" must stay text.
 const safe = (v: string | null | undefined) => (v && /^[=+\-@\t\r]/.test(v) ? `'${v}` : (v ?? ""));
@@ -9,7 +13,15 @@ const safe = (v: string | null | undefined) => (v && /^[=+\-@\t\r]/.test(v) ? `'
 type Cell = string | number;
 interface Table { name: string; header: string[]; rows: Cell[][] }
 
-export async function buildTables(kind: "attendees" | "checkins"): Promise<Table[]> {
+export async function buildTables(kind: Kind, opts: ExportOpts = {}): Promise<Table[]> {
+  if (kind === "contacts") {
+    const c = await listContacts({ status: opts.status, unique: opts.unique });
+    return [{
+      name: "Contacts",
+      header: ["Name", "Phone", "Email", "Instagram", "Status", "Pass", "Tickets", "Amount (Rs)", "Entered at (IST)", "WhatsApp link", "Order ID"],
+      rows: c.map((r) => [safe(r.name), r.phone, safe(r.email), safe(r.instagram), r.statusLabel, safe(r.pass), r.qty, r.amountPaise / 100, formatFullIST(r.at), `https://wa.me/${r.phone.replace(/\D/g, "")}`, r.orderId]),
+    }];
+  }
   if (kind === "attendees") {
     const g = await allGuests();
     return [{
@@ -34,15 +46,15 @@ const csvCell = (c: Cell) => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-export async function toCsv(kind: "attendees" | "checkins"): Promise<string> {
-  const [t] = await buildTables(kind);
+export async function toCsv(kind: Kind, opts: ExportOpts = {}): Promise<string> {
+  const [t] = await buildTables(kind, opts);
   return "﻿" + [t.header, ...t.rows].map((r) => r.map(csvCell).join(",")).join("\r\n");
 }
 
-export async function toXlsx(kind: "attendees" | "checkins"): Promise<Buffer> {
+export async function toXlsx(kind: Kind, opts: ExportOpts = {}): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.created = new Date();
-  for (const t of await buildTables(kind)) {
+  for (const t of await buildTables(kind, opts)) {
     const ws = wb.addWorksheet(t.name, { views: [{ state: "frozen", ySplit: 1 }] });
     ws.addRow(t.header).font = { bold: true };
     t.rows.forEach((r) => ws.addRow(r));

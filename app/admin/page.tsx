@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AdminApp } from "@/components/admin/AdminApp";
-import { getStaff } from "@/lib/auth";
+import { getStaff, isAdminRole } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -15,6 +15,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     const back = `/admin${tab ? `?tab=payments${order ? `&order=${order}` : ""}` : ""}`;
     redirect(`/login?next=${encodeURIComponent(back)}`);
   }
-  if (staff.role !== "admin") redirect("/scan"); // server-side: volunteers never get the admin shell
+  if (!isAdminRole(staff.role)) redirect("/scan"); // server-side: volunteers never get the admin shell
   return <AdminApp name={staff.name} initialTab={tab} focusOrder={order} />;
 }

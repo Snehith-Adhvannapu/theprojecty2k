@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PrintButton } from "@/components/admin/PrintButton";
 import { allGuests } from "@/lib/admin";
-import { getStaff } from "@/lib/auth";
+import { getStaff , isAdminRole } from "@/lib/auth";
 import { eventConfig as e } from "@/config/event";
 import { formatFullIST } from "@/lib/time";
 
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function PrintList() {
   const staff = await getStaff();
   if (!staff) redirect("/login?next=/admin/print");
-  if (staff.role !== "admin") redirect("/scan");
+  if (!isAdminRole(staff.role)) redirect("/scan");
   const guests = (await allGuests()).filter((g) => g.status !== "revoked");
   return (
     <div className="calm mx-auto max-w-[900px] p-6">

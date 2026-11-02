@@ -1,37 +1,87 @@
-// One-page PDF ticket. The QR holds the token only, never personal data.
+// One-page PDF ticket in the site's chrome-noir theme. The QR holds the token only, never personal data.
+import fs from "node:fs";
+import path from "node:path";
 import QRCode from "qrcode";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import { eventConfig as e } from "@/config/event";
 
 export interface PdfTicket { token: string; shortCode: string; admits: number; passName: string; holderName: string }
 
-// Tokens from design/tokens.css (print-safe: light card on white).
-const INK = rgb(0.04, 0.04, 0.04);
-const MUTED = rgb(0.42, 0.42, 0.45);
-const RED = rgb(0.69, 0.09, 0.12);
+// design/tokens.css, as RGB.
+const BG = rgb(0.02, 0.02, 0.02);
+const SURFACE = rgb(0.048, 0.048, 0.048);
+const LINE = rgb(0.133, 0.133, 0.133);
+const FG = rgb(0.945, 0.933, 0.918);
+const MUTED = rgb(0.557, 0.557, 0.576);
+const CHROME = rgb(0.796, 0.808, 0.824);
+const BLOOD = rgb(0.69, 0.09, 0.12);
+const CRIMSON = rgb(0.89, 0.19, 0.18);
+
+const font = (f: string) => fs.readFileSync(path.join(process.cwd(), "assets", "fonts", f));
+
+/** Draws text with letter spacing (pdf-lib has none). Returns the width used. */
+function spaced(page: PDFPage, t: string, x: number, y: number, f: PDFFont, size: number, color: ReturnType<typeof rgb>, track = 0) {
+  let cx = x;
+  for (const ch of t) { page.drawText(ch, { x: cx, y, size, font: f, color }); cx += f.widthOfTextAtSize(ch, size) + track; }
+  return cx - x - track;
+}
 
 export async function ticketPdf(t: PdfTicket): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  const page = doc.addPage([420, 640]);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const reg = await doc.embedFont(StandardFonts.Helvetica);
-  const { width } = page.getSize();
+  doc.registerFontkit(fontkit);
+  const [bebas, body, strong] = await Promise.all([
+    doc.embedFont(font("BebasNeue.ttf"), { subset: true }),
+    doc.embedFont(font("Manrope-500.woff"), { subset: true }),
+    doc.embedFont(font("Manrope-800.woff"), { subset: true }),
+  ]);
+  const W = 420, H = 700, M = 28;
+  const page = doc.addPage([W, H]);
+  page.drawRectangle({ x: 0, y: 0, width: W, height: H, color: BG });
+  page.drawRectangle({ x: 0, y: H - 4, width: W, height: 4, color: BLOOD });
 
-  page.drawRectangle({ x: 0, y: 560, width, height: 80, color: INK });
-  page.drawText("PROJECT Y2K", { x: 28, y: 592, size: 26, font: bold, color: rgb(0.95, 0.94, 0.92) });
-  page.drawText(e.dateLabel.toUpperCase(), { x: 28, y: 570, size: 10, font: reg, color: rgb(0.8, 0.8, 0.82) });
+  // Masthead
+  spaced(page, "PROJECT", M, H - 44, strong, 9, CRIMSON, 4);
+  page.drawText("Y2K", { x: M - 2, y: H - 112, size: 82, font: bebas, color: CHROME });
+  page.drawText(e.tagline, { x: M, y: H - 132, size: 11, font: body, color: MUTED });
+  spaced(page, "ENTRY PASS", W - M - 70, H - 44, strong, 8, MUTED, 3);
+  page.drawLine({ start: { x: M, y: H - 152 }, end: { x: W - M, y: H - 152 }, thickness: 0.75, color: LINE });
 
-  page.drawText(`ADMITS ${t.admits}`, { x: 28, y: 515, size: 34, font: bold, color: INK });
-  page.drawText(t.passName, { x: 28, y: 490, size: 13, font: reg, color: MUTED });
-  page.drawText(t.holderName, { x: 28, y: 465, size: 18, font: bold, color: INK });
-  page.drawText(`${e.venue.name}  ·  Doors ${e.doorsOpen}`, { x: 28, y: 445, size: 10, font: reg, color: MUTED });
+  // Admits + holder
+  spaced(page, "ADMITS", M, H - 180, strong, 8, CRIMSON, 3);
+  page.drawText(String(t.admits), { x: M, y: H - 232, size: 58, font: bebas, color: FG });
+  page.drawText(t.passName, { x: M + 70, y: H - 210, size: 13, font: strong, color: FG });
+  page.drawText(t.holderName, { x: M + 70, y: H - 228, size: 11, font: body, color: MUTED });
 
-  const png = await doc.embedPng(await QRCode.toBuffer(t.token, { width: 600, margin: 1 }));
-  page.drawImage(png, { x: 60, y: 130, width: 300, height: 300 });
+  // Detail strip
+  const stripY = H - 296;
+  page.drawRectangle({ x: M, y: stripY, width: W - 2 * M, height: 44, color: SURFACE, borderColor: LINE, borderWidth: 0.75 });
+  const cols: [string, string][] = [["DATE", e.dateLabel], ["DOORS", e.doorsOpen], ["VENUE", e.venue.name]];
+  const colW = (W - 2 * M) / 3;
+  cols.forEach(([k, v], i) => {
+    const x = M + i * colW + 10;
+    spaced(page, k, x, stripY + 29, strong, 6.5, MUTED, 2);
+    let s = v; while (body.widthOfTextAtSize(s, 9.5) > colW - 16 && s.length > 4) s = s.slice(0, -2);
+    page.drawText(s === v ? s : s + "…", { x, y: stripY + 13, size: 9.5, font: strong, color: FG });
+  });
 
-  page.drawText("SHORT CODE", { x: 28, y: 100, size: 9, font: reg, color: MUTED });
-  page.drawText(t.shortCode, { x: 28, y: 68, size: 28, font: bold, color: RED });
-  page.drawText("Carry a valid government photo ID. This QR works once.", { x: 28, y: 40, size: 9, font: reg, color: MUTED });
-  page.drawText(`Ticketing powered by ${e.khelo.name}`, { x: 28, y: 24, size: 8, font: reg, color: MUTED });
+  // QR on a light panel so any scanner reads it
+  const PANEL = 232;
+  const px = (W - PANEL) / 2, py = stripY - 24 - PANEL;
+  page.drawRectangle({ x: px, y: py, width: PANEL, height: PANEL, color: FG });
+  const qr = await doc.embedPng(await QRCode.toBuffer(t.token, { width: 600, margin: 0, errorCorrectionLevel: "M", color: { dark: "#050505", light: "#00000000" } }));
+  page.drawImage(qr, { x: px + 16, y: py + 16, width: PANEL - 32, height: PANEL - 32 });
+
+  // Short code
+  const codeY = py - 52;
+  spaced(page, "SHORT CODE", M, codeY + 34, strong, 7.5, MUTED, 3);
+  spaced(page, t.shortCode, M, codeY, bebas, 40, CRIMSON, 4);
+  const note = "Show this code if the QR won't scan.";
+  page.drawText(note, { x: W - M - body.widthOfTextAtSize(note, 8.5), y: codeY + 4, size: 8.5, font: body, color: MUTED });
+
+  // Footer
+  page.drawLine({ start: { x: M, y: 62 }, end: { x: W - M, y: 62 }, thickness: 0.75, color: LINE });
+  page.drawText("Carry a valid government photo ID. This QR works once. Tickets are non-transferable.", { x: M, y: 44, size: 8.5, font: body, color: MUTED });
+  page.drawText(`Ticketing powered by ${e.khelo.name}`, { x: M, y: 28, size: 8, font: body, color: MUTED });
   return doc.save();
 }

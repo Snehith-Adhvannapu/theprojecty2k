@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // PGlite loads its WebAssembly from disk and pg/exceljs use Node internals: never bundle them.
   serverExternalPackages: ["@electric-sql/pglite", "pg", "exceljs"],
   // The migration runner reads drizzle/*.sql at runtime: make sure they ship with the server.
-  outputFileTracingIncludes: { "/**": ["./drizzle/**/*"] },
+  outputFileTracingIncludes: { "/**": ["./drizzle/**/*", "./assets/fonts/*"] },
   redirects: async () => [{ source: "/refunds", destination: "/terms", permanent: true }],
   turbopack: {
     rules: {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { query } from "@/lib/db";
 import { getOrderStatus } from "@/lib/payments";
-import { approveOrder, rejectOrder, reviewQueue, submitProof } from "@/lib/payments/manual";
+import { approveOrder, markRefunded, rejectOrder, reviewQueue, submitProof } from "@/lib/payments/manual";
 import { sniffImage } from "@/lib/proof";
 import { ticketPdf } from "@/lib/tickets/pdf";
 import { makePass, order, setupDb } from "./helpers";
@@ -98,6 +98,19 @@ describe("approve / reject", () => {
     expect((await getOrderStatus(o.id))?.status).toBe("needs_refund");
     const [{ n }] = await query("SELECT count(*)::int AS n FROM tickets");
     expect(n).toBe(0);
+  });
+
+  it("marking a needs_refund order refunded is idempotent, audited, and only valid from needs_refund", async () => {
+    const pass = await makePass(ctx.eventId, 2);
+    const { o } = await submitted(pass);
+    await expect(markRefunded(o.id, ctx.staffId)).rejects.toMatchObject({ code: "NOT_REFUNDABLE" });
+    await query("UPDATE pass_types SET total_qty = 0 WHERE id = $1", [pass]);
+    await approveOrder(o.id, ctx.staffId);
+    await Promise.all([markRefunded(o.id, ctx.staffId), markRefunded(o.id, ctx.staffId)]);
+    expect((await getOrderStatus(o.id))?.status).toBe("refunded");
+    const [{ n }] = await query("SELECT count(*)::int AS n FROM audit_logs WHERE action = 'marked_refunded'");
+    expect(n).toBe(1);
+    await expect(markRefunded("00000000-0000-0000-0000-000000000000", ctx.staffId)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("an unsubmitted order cannot be approved", async () => {

@@ -33,7 +33,8 @@ function toVerdict(r: ScanResp): Verdict {
 
 export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const scannerRef = useRef<{ stop(): void; destroy(): void } | null>(null);
+  const scannerRef = useRef<{ stop(): void; destroy(): void; hasFlash(): Promise<boolean>; toggleFlash(): Promise<void>; isFlashOn(): boolean } | null>(null);
+  const wakeRef = useRef<{ release(): Promise<void> } | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const busyRef = useRef(false);
   const cancelRef = useRef(false);
@@ -46,6 +47,7 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [stats, setStats] = useState<{ checkedIn: number; expected: number } | null>(null);
   const [mode, setMode] = useState<"camera" | "lookup">("camera");
+  const [flash, setFlash] = useState<"none" | "off" | "on">("none");
 
   const beep = useCallback((kind: "admit" | "reject" | "amber") => {
     try {
@@ -76,7 +78,7 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
     clearTimeout(dismissRef.current);
     setVerdict(v);
     beep(v.kind === "admit" ? "admit" : v.kind === "reject" ? "reject" : "amber");
-    if (v.kind === "admit") dismissRef.current = setTimeout(() => setVerdict(null), 2000);
+    if (v.kind === "admit") dismissRef.current = setTimeout(() => setVerdict(null), 3000);
     if (v.kind === "reject") dismissRef.current = setTimeout(() => setVerdict(null), 8000);
   }, [beep]);
 
@@ -148,6 +150,7 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
         );
         scannerRef.current = s;
         await s.start();
+        if (!dead) setFlash((await s.hasFlash().catch(() => false)) ? "off" : "none");
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         setCamError(/denied|permission|NotAllowed/i.test(msg)
@@ -156,7 +159,7 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
         setStarted(false);
       }
     })();
-    return () => { dead = true; scannerRef.current?.destroy(); scannerRef.current = null; };
+    return () => { dead = true; scannerRef.current?.destroy(); scannerRef.current = null; setFlash("none"); };
   }, [started, mode, submit]);
 
   useEffect(() => {
@@ -167,6 +170,27 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
     return () => { clearInterval(t); window.removeEventListener("online", on); window.removeEventListener("offline", off); };
   }, [refreshStats]);
 
+  // Keep the screen awake while the camera is on; the browser drops the lock when the tab is hidden, so re-take it.
+  useEffect(() => {
+    if (!started) return;
+    let dead = false;
+    const take = async () => {
+      try {
+        const nav = navigator as unknown as { wakeLock?: { request(t: "screen"): Promise<{ release(): Promise<void> }> } };
+        const lock = await nav.wakeLock?.request("screen");
+        if (lock) { if (dead) lock.release().catch(() => {}); else wakeRef.current = lock; }
+      } catch { /* not supported or denied: the phone may dim, nothing breaks */ }
+    };
+    take();
+    const vis = () => { if (document.visibilityState === "visible") take(); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { dead = true; document.removeEventListener("visibilitychange", vis); wakeRef.current?.release().catch(() => {}); wakeRef.current = null; };
+  }, [started]);
+
+  async function toggleTorch() {
+    try { await scannerRef.current?.toggleFlash(); setFlash(scannerRef.current?.isFlashOn() ? "on" : "off"); } catch { /* ignore */ }
+  }
+
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     window.location.href = "/login";
@@ -174,13 +198,13 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
 
   return (
     <div className="calm flex h-dvh flex-col bg-bg">
-      <header className="flex items-center justify-between border-b border-line px-3.5 py-2.5 text-[13px]">
+      <header className="flex items-center justify-between gap-2 border-b border-line px-3.5 py-1 text-[13px]">
         <span className="inline-flex items-center gap-2" role="status">
           <span className="size-2 rounded-full" style={{ background: online ? "var(--state-online-dot)" : "var(--state-offline-bg)" }} aria-hidden="true" />
           {online ? "Online" : "No connection"}
         </span>
         <span className="muted flex items-center gap-3">
-          {name}
+          <span className="max-w-[28vw] truncate">{name}</span>
           {isAdmin && <a href="/admin" className="inline-flex min-h-11 items-center border-b border-blood text-fg">Admin</a>}
           <button onClick={signOut} className="inline-flex min-h-11 items-center text-fg underline-offset-4 hover:underline">Sign out</button>
         </span>
@@ -193,6 +217,11 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
             {["top-3 left-3 border-t-[3px] border-l-[3px]", "top-3 right-3 border-t-[3px] border-r-[3px]", "bottom-3 left-3 border-b-[3px] border-l-[3px]", "bottom-3 right-3 border-b-[3px] border-r-[3px]"].map((c) => (
               <span key={c} className={`pointer-events-none absolute size-7 border-crimson ${c}`} aria-hidden="true" />
             ))}
+            {started && flash !== "none" && (
+              <button onClick={toggleTorch} aria-pressed={flash === "on"} className="btn btn-calm absolute right-3 bottom-3 min-h-12 px-4 text-sm" style={{ background: "var(--bg)" }}>
+                {flash === "on" ? "Torch off" : "Torch on"}
+              </button>
+            )}
             {!started && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
                 <p className="muted">{camError || "Point the camera at the guest's QR code."}</p>
@@ -220,6 +249,7 @@ function Lookup({ onBack, onAdmit }: { onBack: () => void; onAdmit: (g: Guest) =
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Guest[] | null>(null);
   const [err, setErr] = useState("");
+  const [sure, setSure] = useState("");
 
   useEffect(() => {
     if (q.trim().length < 2) { setRows(null); return; }
@@ -251,14 +281,21 @@ function Lookup({ onBack, onAdmit }: { onBack: () => void; onAdmit: (g: Guest) =
               <p className="text-base font-semibold">{g.name}</p>
               <p className="muted text-[13px] tnum">{g.shortCode} · {g.passName} · Admits {g.admits} · …{g.phoneLast4}</p>
               {valid ? (
-                <button className="btn btn-primary btn-calm mt-1.5 min-h-[52px] text-[15px]" onClick={() => onAdmit(g)}>ADMIT</button>
+                sure === g.id ? (
+                <div className="mt-1.5 flex gap-2">
+                  <button className="btn btn-primary btn-calm min-h-[52px] flex-[2] text-[15px]" onClick={() => { setSure(""); onAdmit(g); }}>Yes, admit {g.admits > 1 ? `${g.admits} people` : "1 person"}</button>
+                  <button className="btn btn-quiet btn-calm min-h-[52px] flex-1 text-[15px]" onClick={() => setSure("")}>Cancel</button>
+                </div>
+              ) : (
+                <button className="btn btn-primary btn-calm mt-1.5 min-h-[52px] text-[15px]" onClick={() => setSure(g.id)}>ADMIT</button>
+              )
               ) : (
                 <p className="text-[13px] text-crimson">{g.status === "used" ? `Already used${g.usedAt ? ` at ${formatTimeIST(g.usedAt)}` : ""}` : "Cancelled / refunded: do not admit"}</p>
               )}
             </div>
           );
         })}
-        <p className="muted text-[13px]">Manual admits are logged with your name.</p>
+        <p className="muted text-[13px]">Match the name to their photo ID before admitting. Manual admits are logged with your name.</p>
       </div>
     </div>
   );
@@ -280,10 +317,11 @@ function StateScreen({ v, onDismiss }: { v: Verdict; onDismiss: () => void }) {
       <button className="state state-admit" onClick={onDismiss} aria-live="assertive">
         <Icon kind="check" />
         <p className="big text-7xl">ADMIT</p>
-        <p className="mt-2 text-[22px] font-semibold">{v.name}</p>
+        <p className="mt-2 text-[28px] font-extrabold leading-tight">{v.name}</p>
         <p className="text-[15px]">{v.pass}</p>
         <p className="big mt-3 text-[56px]">ADMITS {v.admits}</p>
-        <p className="mt-4 text-[13px]">Back to camera in 2 sec · tap to skip</p>
+        <p className="mt-4 text-[15px] font-semibold">Check the name on their photo ID</p>
+        <p className="mt-1 text-[13px]">Back to camera in 3 sec · tap to skip</p>
       </button>
     );
   }

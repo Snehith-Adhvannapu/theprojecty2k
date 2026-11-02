@@ -69,8 +69,9 @@ export function getProvider(): PaymentProvider {
   throw new AppError("PAYMENTS_NOT_CONFIGURED", "Payments are not configured yet.", 503);
 }
 
+// Never in a production build, even if ALLOW_FAKE_PAYMENTS is set by mistake.
 export const fakePaymentsEnabled = () =>
-  !(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) && process.env.ALLOW_FAKE_PAYMENTS === "1";
+  process.env.NODE_ENV !== "production" && !(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) && process.env.ALLOW_FAKE_PAYMENTS === "1";
 
 /** Constant-time HMAC check over the RAW body. */
 export function verifyRazorpaySignature(rawBody: string, signature: string | null): boolean {

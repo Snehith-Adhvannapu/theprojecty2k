@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { paise } from "@/lib/normalize";
-import { formatFullIST, formatTimeIST } from "@/lib/time";
+import { formatTimeIST } from "@/lib/time";
 import { api } from "./api";
 import { Payments } from "./Payments";
 
@@ -34,13 +34,13 @@ export function AdminApp({ name }: { name: string }) {
             <button className="inline-flex min-h-11 items-center hover:text-fg" onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}>Sign out</button>
           </div>
         </header>
-        <nav aria-label="Admin sections" className="-mx-1 flex flex-wrap gap-x-6 overflow-x-auto">
+        <nav aria-label="Admin sections" className="sticky top-0 z-20 -mx-5 flex gap-x-5 overflow-x-auto border-b border-line bg-bg px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
           {TABS.map((t) => (
             <button key={t} onClick={() => setTab(t)} aria-current={tab === t ? "page" : undefined}
-              className={`min-h-11 border-b-2 px-1 text-sm transition-colors ${tab === t ? "border-crimson" : "muted border-transparent hover:text-fg"}`}>{t}</button>
+              className={`min-h-12 shrink-0 border-b-2 px-1 text-sm transition-colors ${tab === t ? "border-crimson" : "muted border-transparent hover:text-fg"}`}>{t}</button>
           ))}
         </nav>
-        <div className="slide-up mt-6" key={tab}>
+        <div className="slide-up mt-5" key={tab}>
           {tab === "Overview" && <Overview go={setTab} />}
           {tab === "Payments" && <Payments />}
           {tab === "Guests" && <Guests />}
@@ -92,22 +92,22 @@ function Overview({ go }: { go: (t: Tab) => void }) {
       </section>
       <section aria-label="Collections" className="card-plain p-5">
         <div className="flex flex-wrap gap-x-10 gap-y-5">
-          {([["Gross collected", s.money.gross], ["Refunded", s.money.refunds], ["Gateway fees", s.money.fees], ["Net", s.money.net]] as const).map(([k, v]) => (
+          {([["Collected", s.money.gross], ["Refunded", s.money.refunds], ["Net", s.money.net]] as const).map(([k, v]) => (
             <div key={k}><p className="label">{k}</p><p className="tnum mt-1 text-2xl font-semibold">{paise(v)}</p></div>
           ))}
         </div>
-        <p className="muted mt-4 text-[13px]">Gross = captured + refunded payments. Net = gross − refunds − gateway fees. Fees show only once the gateway reports them, so net can be slightly high until then. Comp tickets ({s.counts.comps}) carry no money.</p>
+        <p className="muted mt-4 text-[13px]">Counts approved UPI payments only. Net = collected − refunded. Comp tickets ({s.counts.comps}) carry no money. Refunds are sent from your UPI app, then marked here.</p>
       </section>
       {s.needsRefund.length > 0 && (
         <section className="card-plain p-5">
           <h2 className="text-lg">Paid but no ticket (refund these)</h2>
           <ul className="mt-3 divide-y divide-line">
-            {s.needsRefund.map((o) => <li key={o.id} className="flex justify-between gap-3 py-2.5 text-sm"><span>{o.buyer_name} · <span className="muted">{o.id.slice(0, 8)}</span></span><span className="tnum">{paise(o.amount_paise)}</span></li>)}
+            {s.needsRefund.map((o) => <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-sm"><span>{o.buyer_name} · <span className="muted">{o.id.slice(0, 8)}</span></span><span className="flex items-center gap-3"><span className="tnum">{paise(o.amount_paise)}</span><button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={async () => { try { await api(`/api/admin/orders/${o.id}/refunded`, {}); reload(); } catch { /* shown on next load */ } }}>Mark refunded</button></span></li>)}
           </ul>
-          <p className="muted mt-3 text-[13px]">Refund these buyers from your UPI app, then tell them on WhatsApp.</p>
+          <p className="muted mt-3 text-[13px]">Refund these buyers from your UPI app, tell them on WhatsApp, then tap Mark refunded.</p>
         </section>
       )}
-      <p className="muted text-[13px]">Last webhook: {s.health.lastWebhook ? formatFullIST(s.health.lastWebhook) : "none yet"} · Pending emails: {s.health.pending_emails}</p>
+      <p className="muted text-[13px]">Emails waiting to send: {s.health.pending_emails} · Failed: {s.health.failed_emails}</p>
     </div>
   );
 }
@@ -123,6 +123,15 @@ function Guests() {
     setMsg("");
     try { await fn(); setMsg(ok); setConfirm(""); reload(`/api/admin/guests?q=${encodeURIComponent(q)}`); } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); }
   }
+  const actions = (g: Guest) => (
+    <>
+      {g.status === "valid" && (confirm === g.id
+        ? <button className="btn btn-primary btn-calm min-h-11 px-3 text-sm" onClick={() => act(() => api(`/api/admin/tickets/${g.id}/revoke`, {}), "Ticket revoked")}>Confirm revoke</button>
+        : <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => setConfirm(g.id)}>Revoke</button>)}
+      {g.orderId && <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => act(() => api(`/api/admin/orders/${g.orderId}/resend`, {}), "Email queued and sent")}>Resend email</button>}
+    </>
+  );
+  const status = (g: Guest) => g.status === "used" ? `Used ${g.usedAt ? formatTimeIST(g.usedAt) : ""}` : g.status === "revoked" ? "Revoked" : "Valid";
   return (
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -134,8 +143,24 @@ function Guests() {
       </div>
       <Err m={err} />
       {msg && <p role="status" className="mt-3 text-sm">{msg}</p>}
-      <div className="mt-4 overflow-x-auto rounded-sm border border-line">
-        <table className="w-full min-w-[960px] border-collapse text-sm">
+      {/* Phones: one card per guest. */}
+      <ul className="mt-4 flex flex-col gap-3 md:hidden">
+        {data?.map((g) => (
+          <li key={g.id} className="card-plain p-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-base font-semibold">{g.name}{g.source === "comp" && <span className="muted font-normal"> · comp</span>}</p>
+              <span className={`shrink-0 text-sm ${g.status === "revoked" ? "text-crimson" : "muted"}`}>{status(g)}</span>
+            </div>
+            <p className="muted tnum mt-1 text-[13px]">{g.shortCode} · {g.passName} ×{g.admits}</p>
+            <p className="tnum mt-1 text-sm">{g.phone}{g.instagram ? <span className="muted"> · @{g.instagram}</span> : null}</p>
+            <div className="mt-3 flex flex-wrap gap-2">{actions(g)}</div>
+          </li>
+        ))}
+        {data?.length === 0 && <li className="muted py-4 text-sm">No guests match.</li>}
+      </ul>
+      {/* Desktop: table. */}
+      <div className="mt-4 hidden overflow-x-auto rounded-sm border border-line md:block">
+        <table className="w-full border-collapse text-sm">
           <thead><tr className="bg-card text-left text-muted">{["Name", "Code", "Pass", "Phone", "Instagram", "Status", "Actions"].map((h) => <th key={h} scope="col" className="px-4 py-3 font-medium">{h}</th>)}</tr></thead>
           <tbody>
             {data?.map((g) => (
@@ -145,13 +170,8 @@ function Guests() {
                 <td className="px-4 py-3">{g.passName} <span className="muted">×{g.admits}</span></td>
                 <td className="px-4 py-3 tnum">{g.phone}</td>
                 <td className="px-4 py-3">{g.instagram ? `@${g.instagram}` : "—"}</td>
-                <td className={`px-4 py-3 ${g.status === "revoked" ? "text-crimson" : ""}`}>{g.status === "used" ? `Used ${g.usedAt ? formatTimeIST(g.usedAt) : ""}` : g.status === "revoked" ? "Revoked" : "Valid"}</td>
-                <td className="flex flex-wrap gap-2 px-4 py-2">
-                  {g.status === "valid" && (confirm === g.id
-                    ? <button className="btn btn-primary btn-calm min-h-11 px-3 text-sm" onClick={() => act(() => api(`/api/admin/tickets/${g.id}/revoke`, {}), "Ticket revoked")}>Confirm revoke</button>
-                    : <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => setConfirm(g.id)}>Revoke</button>)}
-                  {g.orderId && <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => act(() => api(`/api/admin/orders/${g.orderId}/resend`, {}), "Email queued and sent")}>Resend email</button>}
-                </td>
+                <td className={`px-4 py-3 ${g.status === "revoked" ? "text-crimson" : ""}`}>{status(g)}</td>
+                <td className="flex flex-wrap gap-2 px-4 py-2">{actions(g)}</td>
               </tr>
             ))}
             {data?.length === 0 && <tr><td colSpan={7} className="muted px-4 py-6">No guests match.</td></tr>}
@@ -217,43 +237,83 @@ function PassRow({ p, fresh, onSaved }: { p: Pass; fresh?: boolean; onSaved: (m:
   );
 }
 
+const ALPHA = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+/** Readable random password: no look-alike characters (0/O, 1/l/I). */
+function genPassword() {
+  const b = crypto.getRandomValues(new Uint8Array(12));
+  return Array.from(b, (x) => ALPHA[x % ALPHA.length]).join("");
+}
+
 function Volunteers() {
   const { data, err, reload } = useLoad<{ id: string; email: string; name: string; role: string; active: boolean }[]>("/api/admin/volunteers");
   const [f, setF] = useState({ name: "", email: "", password: "", role: "volunteer" });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [made, setMade] = useState<{ email: string; password: string } | null>(null);
+  const [reset, setReset] = useState<{ id: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   async function create(e: React.FormEvent) {
-    e.preventDefault(); setBusy(true); setMsg("");
-    try { await api("/api/admin/volunteers", f); setF({ name: "", email: "", password: "", role: "volunteer" }); setMsg("Account created"); reload(); }
+    e.preventDefault(); setBusy(true); setMsg(""); setMade(null);
+    try { await api("/api/admin/volunteers", f); setMade({ email: f.email.trim().toLowerCase(), password: f.password }); setF({ name: "", email: "", password: "", role: "volunteer" }); reload(); }
     catch (er) { setMsg(er instanceof Error ? er.message : "Failed"); }
     setBusy(false);
   }
   async function toggle(id: string, active: boolean) {
+    setMsg("");
     try { await api(`/api/admin/volunteers/${id}`, { active }); reload(); } catch (er) { setMsg(er instanceof Error ? er.message : "Failed"); }
   }
+  async function doReset() {
+    if (!reset) return; setMsg("");
+    try { await api(`/api/admin/volunteers/${reset.id}/password`, { password: reset.password }); const u = data?.find((x) => x.id === reset.id); setMade({ email: u?.email ?? "", password: reset.password }); setReset(null); }
+    catch (er) { setMsg(er instanceof Error ? er.message : "Failed"); }
+  }
+  async function copy(t: string) { try { await navigator.clipboard.writeText(t); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* select manually */ } }
   return (
     <section className="flex flex-wrap gap-6">
-      <div className="min-w-[320px] flex-[2]">
-        <h2 className="text-lg">Staff accounts</h2><Err m={err} />
-        <ul className="mt-3 divide-y divide-line card-plain">
+      <div className="min-w-0 flex-[2_1_320px]">
+        <h2 className="text-lg">Staff accounts</h2><Err m={err} />{msg && <p role="alert" className="mt-3 rounded-sm border border-danger p-3 text-sm">{msg}</p>}
+        {made && (
+          <div role="status" className="mt-3 rounded-sm border border-line-strong p-4 text-sm">
+            <p className="font-semibold">Share these privately. The password is shown only now.</p>
+            <p className="tnum mt-2 break-all">{made.email}<br />{made.password}</p>
+            <button className="btn btn-quiet btn-calm mt-3 min-h-11 px-4 text-sm" onClick={() => copy(`Email: ${made.email}\nPassword: ${made.password}\nScanner: ${location.origin}/scan`)}>{copied ? "Copied" : "Copy login details"}</button>
+          </div>
+        )}
+        <ul className="card-plain mt-3 divide-y divide-line">
           {data?.map((u) => (
-            <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-              <span><span className={u.active ? "" : "muted line-through"}>{u.name}</span> <span className="muted">· {u.email} · {u.role}</span></span>
-              <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => toggle(u.id, !u.active)}>{u.active ? "Revoke access" : "Restore"}</button>
+            <li key={u.id} className="flex flex-col gap-2 px-4 py-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="min-w-0"><span className={`font-medium ${u.active ? "" : "muted line-through"}`}>{u.name}</span> <span className="muted">· {u.role}{u.active ? "" : " · no access"}</span><span className="muted block break-all">{u.email}</span></span>
+                <span className="flex flex-wrap gap-2">
+                  <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => setReset(reset?.id === u.id ? null : { id: u.id, password: genPassword() })}>New password</button>
+                  <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => toggle(u.id, !u.active)}>{u.active ? "Revoke access" : "Restore"}</button>
+                </span>
+              </div>
+              {reset?.id === u.id && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input className="field tnum min-w-[200px] flex-1" value={reset.password} onChange={(e) => setReset({ id: u.id, password: e.target.value })} aria-label={`New password for ${u.name}`} autoComplete="off" />
+                  <button className="btn btn-primary btn-calm min-h-11 px-4 text-sm" onClick={doReset} disabled={reset.password.length < 10}>Set password</button>
+                </div>
+              )}
             </li>
           ))}
         </ul>
+        <p className="muted mt-3 text-[13px]">Setting a new password signs that person out everywhere. Revoking access does the same, instantly.</p>
       </div>
-      <form onSubmit={create} className="card-plain flex min-w-[300px] flex-1 flex-col gap-3 p-4">
+      <form onSubmit={create} className="card-plain flex min-w-0 flex-[1_1_300px] flex-col gap-3 p-4">
         <h2 className="text-lg">Add volunteer</h2>
-        {(["name", "email", "password"] as const).map((k) => (
+        {(["name", "email"] as const).map((k) => (
           <div key={k} className="flex flex-col gap-1"><label className="label" htmlFor={`v-${k}`}>{k}</label>
-            <input id={`v-${k}`} className="field" type={k === "password" ? "password" : k === "email" ? "email" : "text"} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} autoComplete="off" /></div>
+            <input id={`v-${k}`} className="field" type={k === "email" ? "email" : "text"} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} autoComplete="off" /></div>
         ))}
-        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--blood)]" checked={f.role === "admin"} onChange={(e) => setF({ ...f, role: e.target.checked ? "admin" : "volunteer" })} /> Make admin</label>
+        <div className="flex flex-col gap-1"><label className="label" htmlFor="v-password">password</label>
+          <div className="flex gap-2">
+            <input id="v-password" className="field tnum min-w-0 flex-1" type="text" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} autoComplete="off" />
+            <button type="button" className="btn btn-quiet btn-calm min-h-11 shrink-0 px-3 text-sm" onClick={() => setF({ ...f, password: genPassword() })}>Generate</button>
+          </div></div>
+        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--blood)]" checked={f.role === "admin"} onChange={(e) => setF({ ...f, role: e.target.checked ? "admin" : "volunteer" })} /> Make admin (full access)</label>
         <button className="btn btn-primary btn-calm min-h-12" disabled={busy || !f.name || !f.email || f.password.length < 10}>{busy && <span className="spinner" aria-hidden="true" />}Create account</button>
-        <p className="muted text-[13px]">Password: at least 10 characters. Share it privately; they can be revoked instantly.</p>
-        {msg && <p role="status" className="text-sm">{msg}</p>}
+        <p className="muted text-[13px]">Volunteers can only scan and look guests up. Password: at least 10 characters.</p>
       </form>
     </section>
   );

@@ -144,3 +144,15 @@ export async function getProof(orderId: string) {
   if (!r || (!r.proof_url && !r.proof_data)) throw new AppError("NOT_FOUND", "No proof on this order.", 404);
   return { url: r.proof_url as string | null, data: r.proof_data as Buffer | null, mime: (r.proof_mime as string) ?? "image/jpeg" };
 }
+
+/** Admin confirms they sent the money back (from their UPI app) for an order that sold out after payment. */
+export async function markRefunded(orderId: string, staffId: string): Promise<void> {
+  await transaction(async (q) => {
+    const [o] = await q.query("SELECT status FROM orders WHERE id = $1 FOR UPDATE", [orderId]);
+    if (!o) throw new AppError("NOT_FOUND", "Order not found.", 404);
+    if (o.status === "refunded") return; // idempotent
+    if (o.status !== "needs_refund") throw new AppError("NOT_REFUNDABLE", "Only orders marked as needing a refund can be marked refunded.", 409);
+    await q.query("UPDATE orders SET status = 'refunded', reviewed_by = $2, reviewed_at = now() WHERE id = $1", [orderId, staffId]);
+    await audit(q, "marked_refunded", orderId, { staffId });
+  });
+}

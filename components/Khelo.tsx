@@ -12,7 +12,7 @@ function Mark({ size = 22 }: { size?: number }) {
 export function KheloStrip() {
   return (
     <div className="border-b border-line bg-band">
-      <a href={khelo.url} target="_blank" rel="noopener noreferrer" className="wrap flex min-h-11 items-center gap-3 text-xs uppercase tracking-[0.2em] text-muted">
+      <a href={khelo.url} target="_blank" rel="noopener noreferrer" className="wrap flex min-h-12 items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] text-muted">
         <span className="inline-flex items-center gap-2.5"><span className="size-1.5 rounded-full bg-crimson" aria-hidden="true" />Ticketing powered by</span>
         <span className="inline-flex items-center gap-2 font-extrabold tracking-[0.24em] text-fg"><Mark size={20} />KHEL-O</span>
       </a>

@@ -49,10 +49,8 @@ export default function Home() {
         <div className="wrap flex flex-wrap items-center gap-x-14 gap-y-10 pt-14 pb-16 md:pb-20">
           <div className="min-w-0 flex-[1_1_480px]">
             <p className="in eyebrow" style={{ "--i": 0 } as React.CSSProperties}>✦ {e.dateLabel}</p>
-            <h1 className="in mt-5 font-normal" style={{ "--i": 1 } as React.CSSProperties}>
-              <Image src="/images/y2k26-logo.webp" alt="Project Y2K26" width={760} height={585} priority sizes="(min-width: 768px) 460px, 86vw" className="h-auto w-[min(86vw,460px)]" />
-            </h1>
-            <p className="in muted mt-8 max-w-[38ch] text-lg" style={{ "--i": 3 } as React.CSSProperties}>{e.description}</p>
+            <h1 className="sr-only">Project Y2K26: The Matrix</h1>
+            <p className="in muted mt-5 max-w-[38ch] text-lg md:text-xl" style={{ "--i": 3 } as React.CSSProperties}>{e.description}</p>
             <dl className="in mt-8 flex flex-wrap gap-x-10 gap-y-5" style={{ "--i": 4 } as React.CSSProperties}>
               {[
                 ["Date", "15.11.2026"],
@@ -76,7 +74,7 @@ export default function Home() {
               Already booked? <Link href="/find-ticket" className="border-b border-blood">Find my ticket</Link>
             </p>
           </div>
-          <div className="in relative mx-auto aspect-[920/1140] w-full max-w-[460px] flex-[1_1_320px]" style={{ "--i": 3 } as React.CSSProperties}>
+          <div className="in relative order-first mx-auto aspect-[920/1140] w-full max-w-[460px] flex-[1_1_320px] md:order-none" style={{ "--i": 3 } as React.CSSProperties}>
             <div className="hero-glow absolute -inset-6 -z-10" style={{ background: "var(--glow)", opacity: 0.35 }} aria-hidden="true" />
             <Image src="/images/hero-poster.webp" alt="Poster: Project Y2K x Hyd High presents The Matrix. Hyderabad's first ever theatre rave. 15.11.2026, Prasads IMAX, 12 noon to 5PM." width={920} height={1140} priority sizes="(min-width: 768px) 460px, 90vw" className="h-full w-full rounded-sm border border-line object-cover" />
           </div>

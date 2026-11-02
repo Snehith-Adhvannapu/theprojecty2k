@@ -34,12 +34,12 @@ export default function Home() {
       <KheloStrip />
       <header className="sticky top-0 z-30 border-b border-line bg-bg">
         <div className="wrap flex items-center justify-between gap-4 py-1.5">
-          <Logo />
+          <Logo tag="The Matrix" />
           <nav aria-label="Primary" className="flex items-center gap-x-5 sm:gap-x-7">
             <a href="#last" className="muted hidden min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-fg sm:inline-flex">Last time</a>
             <a href="#faq" className="muted hidden min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-fg sm:inline-flex">FAQ</a>
-            <Link href="/find-ticket" className="inline-flex min-h-11 items-center text-xs uppercase tracking-[0.2em] transition-colors hover:text-crimson">My ticket</Link>
-            <a href="#passes" className="btn min-h-11 px-4 text-xs sm:px-5">Get passes</a>
+            <Link href="/find-ticket" className="hidden min-h-11 items-center whitespace-nowrap text-xs sm:inline-flex uppercase tracking-[0.2em] transition-colors hover:text-crimson">My ticket</Link>
+            <a href="#passes" className="btn min-h-11 whitespace-nowrap px-4 text-xs sm:px-5">Get passes</a>
           </nav>
         </div>
       </header>

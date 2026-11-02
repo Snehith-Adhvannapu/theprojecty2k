@@ -142,7 +142,7 @@ export async function flushOutbox(orderId?: string): Promise<void> {
 export async function sendFindMyTicket(email: string | null, phone: string | null): Promise<void> {
   const rows = await query(
     `SELECT DISTINCT o.id, o.buyer_email, o.status FROM orders o
-      WHERE o.status IN ('paid','awaiting_review','pending') AND o.created_at > now() - interval '60 days' AND (($1::text IS NOT NULL AND o.buyer_email = $1) OR ($2::text IS NOT NULL AND o.buyer_phone = $2))`,
+      WHERE o.status IN ('paid','awaiting_review','pending') AND (o.status = 'paid' OR o.created_at > now() - interval '60 days') AND (($1::text IS NOT NULL AND o.buyer_email = $1) OR ($2::text IS NOT NULL AND o.buyer_phone = $2))`,
     [email, phone],
   );
   const byEmail = new Map<string, { id: string; status: string }[]>();

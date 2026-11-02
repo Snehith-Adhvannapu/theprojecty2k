@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@electric-sql/pglite", "pg", "exceljs"],
   // The migration runner reads drizzle/*.sql at runtime: make sure they ship with the server.
   outputFileTracingIncludes: { "/**": ["./drizzle/**/*"] },
+  redirects: async () => [{ source: "/refunds", destination: "/terms", permanent: true }],
   turbopack: {
     rules: {
       "*.css": {

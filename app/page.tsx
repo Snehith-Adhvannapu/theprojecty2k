@@ -18,7 +18,7 @@ const faqs: [string, string][] = [
   ["I lost my ticket or the email.", "Use “Find my ticket” in the footer with the email or phone number you booked with, and we'll email your ticket links again. Or we look you up at the door with your name, phone number and ID."],
   ["Who can come?", `${e.ageLimit}. Bring a valid government photo ID.`],
   ["Is my ticket transferable?", `${e.policy.transferable}. Each QR works once. Whoever's code is scanned first gets in, so don't post it publicly.`],
-  ["What about refunds?", `${e.policy.refundPolicy}. Full policy linked in the footer.`],
+  ["What about refunds?", `${e.policy.refundPolicy}. ${e.policy.transferable}. ${e.policy.reentry}. See the Terms in the footer.`],
 ];
 
 const photos = [
@@ -35,6 +35,7 @@ export default function Home() {
         <nav aria-label="Primary" className="flex flex-wrap items-center gap-x-7">
           <a href="#last" className="muted inline-flex min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-fg">Last time</a>
           <a href="#faq" className="muted inline-flex min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-fg">FAQ</a>
+          <Link href="/find-ticket" className="inline-flex min-h-11 items-center text-xs uppercase tracking-[0.25em] transition-colors hover:text-crimson">My ticket</Link>
           <a href="#passes" className="btn min-h-11 px-5 text-xs">Get passes</a>
         </nav>
       </header>
@@ -69,6 +70,9 @@ export default function Home() {
             </div>
             <p className="in muted mt-5 text-[13px]" style={{ "--i": 6 } as React.CSSProperties}>
               Pay by UPI · PDF ticket by email once verified · Non-refundable, no re-entry
+            </p>
+            <p className="in mt-4 text-sm" style={{ "--i": 7 } as React.CSSProperties}>
+              Already booked? <Link href="/find-ticket" className="border-b border-blood">Find my ticket</Link>
             </p>
           </div>
           <div className="in relative mx-auto aspect-[4/5] w-full max-w-[460px] flex-[1_1_320px]" style={{ "--i": 3 } as React.CSSProperties}>

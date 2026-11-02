@@ -36,7 +36,7 @@ export const eventConfig = {
     eventDayHelpline: "9052257297, 7093967777, 7386085052",
   },
   policy: {
-    // Pick one and fill the blanks in the Refund page. State it plainly.
+    // Shown in the Terms and FAQ. State it plainly.
     refundPolicy: "Tickets are non-refundable",
     transferable: "No, tickets are non-transferable",
     reentry: "No re-entry",
@@ -47,6 +47,8 @@ export const eventConfig = {
   payment: {
     upiId: process.env.NEXT_PUBLIC_UPI_ID || "Q022698137@ybl",
     payeeName: process.env.NEXT_PUBLIC_UPI_PAYEE || "Project Y2K",
+    // What the buyer's UPI app actually shows as the account name (set NEXT_PUBLIC_UPI_NOTE), so nobody panics.
+    accountNote: process.env.NEXT_PUBLIC_UPI_NOTE || "",
     reviewHoldHours: 24,
   },
   khelo: { name: "Khelo", url: "https://khel-o.com" },

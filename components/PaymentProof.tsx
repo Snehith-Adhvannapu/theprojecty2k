@@ -122,6 +122,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
           <div className="w-full min-w-0 flex-1">
             <p className="muted text-[13px]">Pay to</p>
             <p className="text-lg font-semibold">{payeeName}</p>
+            {e.payment.accountNote && <p className="muted text-[13px]">Your UPI app may show the account name as &ldquo;{e.payment.accountNote}&rdquo;. That is our collection account.</p>}
             <div className="mt-2 flex items-center gap-2">
               <code className="field flex !min-h-11 min-w-0 flex-1 items-center overflow-x-auto text-[15px]">{upiId}</code>
               <button type="button" className="btn btn-quiet btn-calm min-h-11 shrink-0 px-4 text-sm" onClick={copy}>{copied ? "Copied" : "Copy"}</button>

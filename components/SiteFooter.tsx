@@ -19,7 +19,6 @@ export function SiteFooter() {
           {[
             ["/terms", "Terms & conditions"],
             ["/privacy", "Privacy policy"],
-            ["/refunds", "Refund & cancellation"],
             ["/contact", "Contact"],
             ["/find-ticket", "Find my ticket"],
           ].map(([href, label]) => (

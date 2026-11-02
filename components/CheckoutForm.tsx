@@ -69,7 +69,7 @@ export function CheckoutForm() {
     if (!normalizePhone(f.phone)) x.phone = "Enter a valid 10-digit mobile number";
     if (!/^\S+@\S+\.\S+$/.test(normalizeEmail(f.email))) x.email = "Enter a valid email address";
     if (f.instagram.trim() && !normalizeInstagram(f.instagram)) x.instagram = "That doesn't look like an Instagram handle";
-    if (!accepted) x.accepted = "Please accept the terms and refund policy to continue";
+    if (!accepted) x.accepted = "Please accept the terms to continue";
     setErrs(x);
     return Object.keys(x).length === 0;
   }
@@ -173,8 +173,6 @@ export function CheckoutForm() {
               onChange={(ev) => { setAccepted(ev.target.checked); setErrs((x) => ({ ...x, accepted: undefined })); }} aria-invalid={!!errs.accepted} />
             <span>
               I agree to the <Link href="/terms" target="_blank" className="border-b border-blood">Terms</Link>,{" "}
-              <Link href="/refunds" target="_blank" className="border-b border-blood">Refund &amp; cancellation policy</Link> and{" "}
-              <Link href="/privacy" target="_blank" className="border-b border-blood">Privacy policy</Link>.
             </span>
           </label>
           {errs.accepted && <p className="field-error mt-1" role="alert">{errs.accepted}</p>}

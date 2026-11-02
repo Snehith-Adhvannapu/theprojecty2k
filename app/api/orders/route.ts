@@ -12,7 +12,7 @@ const schema = z.object({
   email: emailSchema,
   instagram: instagramSchema,
   idempotencyKey: z.string().min(8).max(80),
-  accepted: z.literal(true, { error: "Please accept the terms and refund policy" }),
+  accepted: z.literal(true, { error: "Please accept the terms" }),
 });
 
 export async function POST(req: Request) {

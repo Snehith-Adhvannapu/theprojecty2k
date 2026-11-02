@@ -17,7 +17,7 @@ export default function Terms() {
         <li><strong>Prohibited items.</strong> {e.rules.join("; ")}</li>
         <li><strong>Photography.</strong> By attending, you consent to being photographed or filmed for event promotion, unless you tell the crew at the door.</li>
         <li><strong>Changes.</strong> The organiser may change timings, lineup, or venue where necessary and will announce changes through Instagram, WhatsApp or email.</li>
-        <li><strong>Refunds and cancellation.</strong> See the <a href="/refunds">Refund &amp; cancellation policy</a>, which forms part of these terms.</li>
+        <li><strong>Refunds, transfers and re-entry.</strong> {e.policy.refundPolicy}. {e.policy.transferable}. {e.policy.reentry}. If we cancel or reschedule the event we will contact ticket holders directly on the email and WhatsApp number provided.</li>
         <li><strong>Liability.</strong> Attendees participate at their own risk. The organiser is not liable for loss of personal belongings, to the extent permitted by law.</li>
         <li><strong>Governing law.</strong> These terms are governed by the laws of India. Disputes are subject to the courts at {e.policy.governingCity}.</li>
         <li><strong>Contact.</strong> {e.organiser.email}, WhatsApp {e.organiser.whatsapp}.</li>

@@ -59,7 +59,7 @@ export function CheckoutForm() {
   const money = useMemo(() => {
     if (!pass) return { sub: 0, fee: 0, booking: 0, total: 0 };
     const sub = pass.pricePaise * qty;
-    const booking = sub > 0 ? bookingFee : 0; // the server adds the same flat fee once per booking
+    const booking = sub > 0 ? bookingFee * qty : 0; // the server adds the same fee per pass
     return { sub, fee: pass.feePaise * qty, booking, total: (pass.pricePaise + pass.feePaise) * qty + booking };
   }, [pass, qty, bookingFee]);
 
@@ -170,7 +170,7 @@ export function CheckoutForm() {
           <div className="card tnum mt-3 flex flex-col gap-3 p-5">
             <div className="flex justify-between gap-4"><span>{pass.name} × {qty}</span><span>{paise(money.sub)}</span></div>
             {pass.feePaise > 0 && <div className="muted flex justify-between gap-4"><span className="inline-flex items-center gap-1.5">Processing fee<Tip text="A small extra charge per pass. It is already included in the total below, so the price you see is the price you pay." /></span><span>{paise(money.fee)}</span></div>}
-            {money.booking > 0 && <div className="muted flex justify-between gap-4"><span className="inline-flex items-center gap-1.5">Booking fee<Tip text={`A flat ${paise(money.booking)} for the whole booking, however many tickets you buy. It covers tax, upkeep and the running costs of the website. It is already included in the total below.`} /></span><span>{paise(money.booking)}</span></div>}
+            {money.booking > 0 && <div className="muted flex justify-between gap-4"><span className="inline-flex items-center gap-1.5">Booking fee{qty > 1 ? ` (${qty} × ${paise(bookingFee)})` : ""}<Tip text={`${paise(bookingFee)} per pass. It covers tax, upkeep and the running costs of the website. It is already included in the total below.`} /></span><span>{paise(money.booking)}</span></div>}
             <div className="h-px bg-line" />
             <div className="flex items-baseline justify-between gap-4"><span className="font-semibold">Total (INR)</span><span className="text-2xl font-semibold">{paise(money.total)}</span></div>
           </div>

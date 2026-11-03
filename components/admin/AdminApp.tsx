@@ -119,19 +119,15 @@ function Overview({ go }: { go: (t: Tab) => void }) {
 function Guests() {
   const [q, setQ] = useState("");
   const { data, err, reload } = useLoad<Guest[]>("/api/admin/guests");
-  const [confirm, setConfirm] = useState("");
   const [msg, setMsg] = useState("");
   useEffect(() => { const t = setTimeout(() => reload(`/api/admin/guests?q=${encodeURIComponent(q)}`), 250); return () => clearTimeout(t); }, [q, reload]);
 
   async function act(fn: () => Promise<unknown>, ok: string) {
     setMsg("");
-    try { await fn(); setMsg(ok); setConfirm(""); reload(`/api/admin/guests?q=${encodeURIComponent(q)}`); } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); }
+    try { await fn(); setMsg(ok); reload(`/api/admin/guests?q=${encodeURIComponent(q)}`); } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); }
   }
   const actions = (g: Guest) => (
     <>
-      {g.status === "valid" && (confirm === g.id
-        ? <button className="btn btn-primary btn-calm min-h-11 px-3 text-sm" onClick={() => act(() => api(`/api/admin/tickets/${g.id}/revoke`, {}), "Ticket revoked")}>Confirm revoke</button>
-        : <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => setConfirm(g.id)}>Revoke</button>)}
       {g.orderId && <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => act(() => api(`/api/admin/orders/${g.orderId}/resend`, {}), "Email queued and sent")}>Resend email</button>}
     </>
   );

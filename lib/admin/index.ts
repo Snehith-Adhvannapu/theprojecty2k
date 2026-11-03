@@ -201,12 +201,6 @@ export async function compTicket(
   return { id: t.id, shortCode: t.shortCode, token: tokenForTicket(t.id) };
 }
 
-export async function revokeTicket(actorId: string, ticketId: string) {
-  const r = await query("UPDATE tickets SET status = 'revoked' WHERE id = $1 AND status = 'valid' RETURNING id", [ticketId]);
-  if (!r.length) throw new AppError("NOT_REVOCABLE", "Only unused valid tickets can be revoked.", 409);
-  await audit(actorId, "ticket_revoked", ticketId);
-}
-
 /** Paid-but-no-ticket hunting. Asks the gateway about every pending order that has a payment attempt. */
 export async function reconcile(actorId: string) {
   const pending = await query(

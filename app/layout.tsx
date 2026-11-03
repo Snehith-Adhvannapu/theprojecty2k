@@ -1,4 +1,5 @@
 import { appUrl } from "@/lib/app-url";
+import { Track } from "@/components/Track";
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Cormorant_Garamond, Manrope } from "next/font/google";
 import { eventConfig } from "@/config/event";
@@ -22,7 +23,7 @@ export const viewport: Viewport = { themeColor: "#050505", width: "device-width"
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${bebas.variable} ${cormorant.variable} ${manrope.variable}`}>
-      <body>{children}</body>
+      <body>{children}<Track /></body>
     </html>
   );
 }

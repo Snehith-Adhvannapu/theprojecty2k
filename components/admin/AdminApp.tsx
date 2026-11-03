@@ -9,8 +9,9 @@ import { Payments } from "./Payments";
 import { Activity, Contacts } from "./Contacts";
 import { PageText } from "./PageText";
 import { Refunds } from "./Refunds";
+import { Analytics } from "./Analytics";
 
-const TABS = ["Overview", "Payments", "Contacts", "Refunds", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools"] as const;
+const TABS = ["Overview", "Payments", "Contacts", "Refunds", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools", "Analytics"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_HELP: Record<Tab, string> = {
@@ -25,6 +26,7 @@ const TAB_HELP: Record<Tab, string> = {
   "Check-ins": "The latest scans at the door, including refused ones.",
   Activity: "A log of every staff action, so you can see who did what.",
   Tools: "Exports, a printable guest list, and free (comp) tickets.",
+  Analytics: "Who is visiting the site, where they come from, and how many go on to buy. Only you can see this.",
 };
 
 interface Summary {
@@ -36,7 +38,7 @@ interface Summary {
 interface Guest { id: string; shortCode: string; name: string; phone: string; email: string | null; instagram: string | null; passName: string; admits: number; status: string; source: string; orderId: string | null; usedAt: string | null; usedBy: string | null }
 interface Pass { id: string; name: string; description: string; pricePaise: number; feePaise: number; totalQty: number; admits: number; active: boolean; sort: number; sold: number; held?: number; salesStart: string | null; salesEnd: string | null }
 
-export function AdminApp({ name, initialTab, focusOrder }: { name: string; initialTab?: Tab; focusOrder?: string }) {
+export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: string; isSuper?: boolean; initialTab?: Tab; focusOrder?: string }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? "Overview");
   return (
     <div className="calm min-h-dvh text-[15px]">
@@ -53,7 +55,7 @@ export function AdminApp({ name, initialTab, focusOrder }: { name: string; initi
           </div>
         </header>
         <nav aria-label="Admin sections" className="sticky top-0 z-20 -mx-5 flex gap-x-5 overflow-x-auto border-b border-line bg-bg px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
-          {TABS.map((t) => (
+          {TABS.filter((t) => t !== "Analytics" || isSuper).map((t) => (
             <button key={t} onClick={() => setTab(t)} aria-current={tab === t ? "page" : undefined}
               className={`min-h-12 shrink-0 border-b-2 px-1 text-sm transition-colors ${tab === t ? "border-crimson" : "muted border-transparent hover:text-fg"}`}>{t}</button>
           ))}
@@ -71,6 +73,7 @@ export function AdminApp({ name, initialTab, focusOrder }: { name: string; initi
           {tab === "Volunteers" && <Volunteers />}
           {tab === "Check-ins" && <Checkins />}
           {tab === "Tools" && <Tools />}
+          {tab === "Analytics" && isSuper && <Analytics />}
         </div>
       </div>
     </div>

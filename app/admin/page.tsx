@@ -16,5 +16,5 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     redirect(`/login?next=${encodeURIComponent(back)}`);
   }
   if (!isAdminRole(staff.role)) redirect("/scan"); // server-side: volunteers never get the admin shell
-  return <AdminApp name={staff.name} initialTab={tab} focusOrder={order} />;
+  return <AdminApp name={staff.name} isSuper={staff.role === "superadmin"} initialTab={tab} focusOrder={order} />;
 }

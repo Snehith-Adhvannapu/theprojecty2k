@@ -100,6 +100,7 @@ export async function requireRole(role: Role): Promise<Staff> {
   const s = await getStaff();
   if (!s) throw new AppError("UNAUTHENTICATED", "Please sign in.", 401);
   if (role === "admin" && !isAdminRole(s.role)) throw new AppError("FORBIDDEN", "Not allowed.", 403);
+  if (role === "superadmin" && s.role !== "superadmin") throw new AppError("FORBIDDEN", "Not allowed.", 403);
   return s;
 }
 

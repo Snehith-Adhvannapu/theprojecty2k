@@ -132,8 +132,10 @@ export default async function Home() {
       {/* LAST TIME */}
       <section id="last" className="wrap section reveal">
         <p className="eyebrow">The last one</p>
-        <h2 className="h2 mt-4">Y2K 1.0, <em>The Index.</em></h2>
-        <p className="muted mt-4 max-w-[60ch]">At Illuzion: a DJ all day, matchmaking, and a photo booth running throughout.</p>
+        <h2 className="h2 mt-4">Y2K 1.0 — <em>The Index.</em></h2>
+        <p className="mt-4 text-lg font-medium">Where it all began.</p>
+        <p className="muted mt-3 max-w-[60ch] text-[17px] leading-relaxed">An unforgettable day at Illuzion, bringing together music, connections and the Y2K experience. With DJs playing throughout, spontaneous matchmaking and a photo booth capturing the moments, this was more than just another party.</p>
+        <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed">The beginning of something bigger. <span className="text-crimson">And we’re only getting started.</span></p>
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {photos.map((p) => (
             <div key={p.src} className={`min-w-0 ${p.cls}`}>

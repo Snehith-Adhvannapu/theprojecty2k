@@ -10,12 +10,16 @@ import { Activity, Contacts } from "./Contacts";
 import { PageText } from "./PageText";
 import { Refunds } from "./Refunds";
 import { Analytics } from "./Analytics";
+import { Guide } from "./Guide";
+import { Tour } from "./Tour";
+import { tourSteps } from "./tour-steps";
 
-const TABS = ["Overview", "Payments", "Contacts", "Refunds", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools", "Analytics"] as const;
+const TABS = ["Overview", "Guide", "Payments", "Contacts", "Refunds", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools", "Analytics"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_HELP: Record<Tab, string> = {
   Overview: "A quick look at sales, check-ins, money and anything that needs you.",
+  Guide: "Your event-day plan, what every tab does, and fixes for common problems. Start the guided tour from here.",
   Payments: "Buyers who paid and sent proof. Check your bank statement, then approve or reject.",
   Contacts: "Everyone who started an order, paid or not. Message them on WhatsApp, call them, or export the list.",
   Refunds: "Who should get money back, who already has, and how it was sent.",
@@ -40,6 +44,10 @@ interface Pass { id: string; name: string; description: string; pricePaise: numb
 
 export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: string; isSuper?: boolean; initialTab?: Tab; focusOrder?: string }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? "Overview");
+  const [tour, setTour] = useState<number | null>(null);
+  const steps = tourSteps(!!isSuper);
+  const startTour = (id?: string) => { const at = id ? steps.findIndex((s) => s.id === id) : 0; setTour(at < 0 ? 0 : at); };
+  const endTour = (finished: boolean) => { setTour(null); try { localStorage.setItem("y2k_tour_seen", finished ? "done" : "skipped"); } catch { /* private mode */ } };
   return (
     <div className="calm min-h-dvh text-[15px]">
       <div className="wrap pb-12">
@@ -48,21 +56,23 @@ export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: stri
             <Logo size={40} />
             <span className="label">Admin</span>
           </div>
-          <div className="muted flex items-center gap-4 text-sm">
+          <div className="muted flex items-center gap-4 text-sm" data-tour="hdr-links">
             {name}
+            <button className="inline-flex min-h-11 items-center border-b border-blood text-fg" onClick={() => startTour()}>Tour</button>
             <a href="/scan" className="inline-flex min-h-11 items-center border-b border-blood text-fg">Scanner</a>
             <button className="inline-flex min-h-11 items-center hover:text-fg" onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}>Sign out</button>
           </div>
         </header>
-        <nav aria-label="Admin sections" className="sticky top-0 z-20 -mx-5 flex gap-x-5 overflow-x-auto border-b border-line bg-bg px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
+        <nav data-tour="nav" aria-label="Admin sections" className="sticky top-0 z-20 -mx-5 flex gap-x-5 overflow-x-auto border-b border-line bg-bg px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
           {TABS.filter((t) => t !== "Analytics" || isSuper).map((t) => (
-            <button key={t} onClick={() => setTab(t)} aria-current={tab === t ? "page" : undefined}
+            <button key={t} data-tour={`tab-${t}`} onClick={() => setTab(t)} aria-current={tab === t ? "page" : undefined}
               className={`min-h-12 shrink-0 border-b-2 px-1 text-sm transition-colors ${tab === t ? "border-crimson" : "muted border-transparent hover:text-fg"}`}>{t}</button>
           ))}
         </nav>
         <p className="muted mt-4 text-sm">{TAB_HELP[tab]}</p>
         <div className="slide-up mt-4" key={tab}>
-          {tab === "Overview" && <Overview go={setTab} />}
+          {tab === "Overview" && <Overview go={setTab} onTour={() => startTour()} />}
+          {tab === "Guide" && <Guide start={startTour} />}
           {tab === "Payments" && <Payments focusOrder={focusOrder} />}
           {tab === "Contacts" && <Contacts />}
           {tab === "Activity" && <Activity />}
@@ -76,6 +86,7 @@ export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: stri
           {tab === "Analytics" && isSuper && <Analytics />}
         </div>
       </div>
+      {tour !== null && <Tour steps={steps} start={tour} tab={tab} setTab={(t) => setTab(t as Tab)} onClose={endTour} />}
     </div>
   );
 }
@@ -95,7 +106,9 @@ const Stat = ({ k, v, tip }: { k: string; v: React.ReactNode; tip?: string }) =>
   <div className="card-plain relative min-w-[160px] flex-1 px-5 py-4">{tip && <span className="absolute right-3.5 top-3.5"><Tip text={tip} /></span>}<p className="label pr-6">{k}</p><p className="tnum mt-1.5 text-[32px] font-semibold">{v}</p></div>
 );
 
-function Overview({ go }: { go: (t: Tab) => void }) {
+function Overview({ go, onTour }: { go: (t: Tab) => void; onTour: () => void }) {
+  const [seen, setSeen] = useState(true);
+  useEffect(() => { try { setSeen(!!localStorage.getItem("y2k_tour_seen")); } catch { /* private mode */ } }, []);
   const { data: s, err, reload } = useLoad<Summary>("/api/admin/summary");
   useEffect(() => { const t = setInterval(() => reload(), 20_000); return () => clearInterval(t); }, [reload]);
   if (err) return <Err m={err} />;
@@ -103,19 +116,28 @@ function Overview({ go }: { go: (t: Tab) => void }) {
   const attention = s.needsRefund.length + s.health.failed_emails + s.health.awaiting_review;
   return (
     <div className="flex flex-col gap-3">
+      {!seen && (
+        <section aria-label="Guided tour" className="card flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <p className="min-w-[240px] flex-1 text-[15px]"><strong className="font-semibold">New here?</strong> Take the 5-minute tour. It shows every screen and button you need on event day.</p>
+          <span className="flex flex-wrap gap-2">
+            <button className="btn btn-primary btn-calm min-h-11 px-5 text-sm" onClick={onTour}>Start the tour</button>
+            <button className="btn btn-quiet btn-calm min-h-11 px-4 text-sm" onClick={() => { setSeen(true); try { localStorage.setItem("y2k_tour_seen", "dismissed"); } catch { /* private mode */ } }}>Not now</button>
+          </span>
+        </section>
+      )}
       {attention > 0 && (
-        <section aria-label="Needs attention" className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-blood bg-[var(--selected)] px-5 py-4">
+        <section data-tour="ov-attention" aria-label="Needs attention" className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-blood bg-[var(--selected)] px-5 py-4">
           <p><strong className="font-semibold text-crimson">Needs attention:</strong> {s.health.awaiting_review} payments to verify · {s.needsRefund.length} orders need a refund · {s.health.failed_emails} failed emails</p>
           <button className="btn btn-calm min-h-11 text-sm" onClick={() => go(s.health.awaiting_review > 0 ? "Payments" : "Tools")}>Review</button>
         </section>
       )}
-      <section aria-label="Counts" className="flex flex-wrap gap-3">
+      <section data-tour="ov-counts" aria-label="Counts" className="flex flex-wrap gap-3">
         <Stat k="Tickets sold" v={s.counts.sold} tip="Tickets that have been paid for and approved by an admin. Orders still waiting for payment or review are not counted." />
         <Stat k="Still available" v={s.counts.left} tip="Passes you can still sell: total minus sold, minus seats temporarily held by buyers who haven't paid yet. Held seats come back automatically if the buyer doesn't send proof in time." />
         <Stat k="Checked in (people)" v={`${s.counts.checked_in_people}/${s.counts.people_expected}`} tip="People scanned in at the door, out of everyone expected. A couple pass counts as 2 people." />
         <Stat k="Pending orders" v={s.health.pending_orders} tip="Buyers who chose a pass and are still inside their hold time but haven't sent a UTR and screenshot yet. Nothing to do for these." />
       </section>
-      <section aria-label="Collections" className="card-plain p-5">
+      <section data-tour="ov-money" aria-label="Collections" className="card-plain p-5">
         <div className="flex flex-wrap gap-x-10 gap-y-5">
           {([["Collected (tickets)", s.money.gross, "Money from approved UPI payments, one entry per issued ticket. Compare it with your bank statement."], ["Refunded", s.money.refunds, "Money you have already sent back and marked as refunded."], ["Still to refund", s.money.owed, "Money buyers paid that you still need to send back (people who paid but won't get a ticket)."]] as const).map(([k, v, t]) => (
             <div key={k}><p className="label">{k} <Tip text={t} /></p><p className="tnum mt-1 text-2xl font-semibold">{paise(v)}</p></div>
@@ -164,7 +186,7 @@ function Guests() {
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-lg">Guests<Tip text="Every issued ticket. Short code: the code printed under the QR; a volunteer can type it if the QR won't scan. Valid = not used yet. Used = already scanned in." /></h2>
-        <div className="flex max-w-[520px] flex-[1_1_320px] flex-col gap-1.5">
+        <div data-tour="gs-search" className="flex max-w-[520px] flex-[1_1_320px] flex-col gap-1.5">
           <label htmlFor="a-q" className="muted text-[13px]">Search name, phone, ticket ID, short code or Instagram</label>
           <input id="a-q" type="search" className="field" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" />
         </div>
@@ -173,7 +195,7 @@ function Guests() {
       {msg && <p role="status" className="mt-3 text-sm">{msg}</p>}
       {/* Phones: one card per guest. */}
       <ul className="mt-4 flex flex-col gap-3 md:hidden">
-        {data?.map((g) => (
+        {data?.map((g, gi) => (
           <li key={g.id} className="card-plain p-4">
             <div className="flex items-start justify-between gap-3">
               <p className="text-base font-semibold">{g.name}{g.source === "comp" && <span className="muted font-normal"> · comp</span>}</p>
@@ -181,7 +203,7 @@ function Guests() {
             </div>
             <p className="muted tnum mt-1 text-[13px]">{g.shortCode} · {g.passName} ×{g.admits}</p>
             <p className="tnum mt-1 text-sm">{g.phone}{g.instagram ? <span className="muted"> · @{g.instagram}</span> : null}</p>
-            <div className="mt-3 flex flex-wrap gap-2">{actions(g)}</div>
+            <div data-tour={gi === 0 ? "gs-actions" : undefined} className="mt-3 flex flex-wrap gap-2">{actions(g)}</div>
             {editing === g.id && <GuestEdit g={g} cancel={() => setEditing("")} done={(m) => { setEditing(""); setMsg(m); reload(`/api/admin/guests?q=${encodeURIComponent(q)}`); }} />}
           </li>
         ))}
@@ -192,7 +214,7 @@ function Guests() {
         <table className="w-full border-collapse text-sm">
           <thead><tr className="bg-card text-left text-muted">{["Name", "Code", "Pass", "Phone", "Instagram", "Status", "Actions"].map((h) => <th key={h} scope="col" className="px-4 py-3 font-medium">{h === "Code" ? <span className="inline-flex items-center gap-1.5">{h}<Tip text="The short code under the ticket's QR. If a QR won't scan, the volunteer can find the guest with this." /></span> : h === "Actions" ? <span className="inline-flex items-center gap-1.5">{h}<Tip text="Resend email sends the ticket link to the buyer again. Use it if they say they never got it." /></span> : h}</th>)}</tr></thead>
           <tbody>
-            {data?.map((g) => (
+            {data?.map((g, gi) => (
               <Fragment key={g.id}>
               <tr className="border-t border-line align-top">
                 <td className="px-4 py-3">{g.name}{g.source === "comp" && <span className="muted"> · comp</span>}</td>
@@ -201,7 +223,7 @@ function Guests() {
                 <td className="px-4 py-3 tnum">{g.phone}</td>
                 <td className="px-4 py-3">{g.instagram ? `@${g.instagram}` : "—"}</td>
                 <td className={`px-4 py-3 ${g.status === "revoked" ? "text-crimson" : ""}`}>{status(g)}</td>
-                <td className="flex flex-wrap gap-2 px-4 py-2">{actions(g)}</td>
+                <td data-tour={gi === 0 ? "gs-actions" : undefined} className="flex flex-wrap gap-2 px-4 py-2">{actions(g)}</td>
               </tr>
               {editing === g.id && <tr><td colSpan={7} className="px-4 pb-4"><GuestEdit g={g} cancel={() => setEditing("")} done={(m) => { setEditing(""); setMsg(m); reload(`/api/admin/guests?q=${encodeURIComponent(q)}`); }} /></td></tr>}
               </Fragment>
@@ -283,16 +305,16 @@ function Passes() {
       <h2 className="flex items-center gap-1.5 text-lg">Passes<Tip text="Each row is one kind of ticket. Change the numbers and press Save. Buyers see the new price and availability within a few seconds." /></h2>
       <p className="muted mt-1 text-sm">Pick one admission (admits 1) or a couple pass (admits 2: one QR, one scan). Prices in rupees.</p>
       <Err m={err} />{msg && <p role="status" className="mt-3 text-sm">{msg}</p>}
-      <div className="mt-4"><SalesSwitch /></div>
+      <div className="mt-4" data-tour="ps-sales"><SalesSwitch /></div>
       <div className="mt-4 flex flex-col gap-3">
-        {data?.map((p) => <PassRow key={p.id} p={p} onSaved={(m) => { setMsg(m); reload(); }} />)}
+        {data?.map((p, pi) => <PassRow key={p.id} p={p} tour={pi === 0} onSaved={(m) => { setMsg(m); reload(); }} />)}
         <PassRow p={{ id: "", name: "", description: "", pricePaise: 0, feePaise: 0, totalQty: 0, admits: 1, active: false, sort: (data?.length ?? 0), sold: 0, salesStart: null, salesEnd: null }} fresh onSaved={(m) => { setMsg(m); reload(); }} />
       </div>
     </section>
   );
 }
 
-function PassRow({ p, fresh, onSaved }: { p: Pass; fresh?: boolean; onSaved: (m: string) => void }) {
+function PassRow({ p, fresh, tour, onSaved }: { p: Pass; fresh?: boolean; tour?: boolean; onSaved: (m: string) => void }) {
   const [f, setF] = useState({ name: p.name, description: p.description, price: rupees(p.pricePaise), fee: rupees(p.feePaise), total: String(p.totalQty), admits: String(p.admits), active: p.active, start: toIst(p.salesStart), end: toIst(p.salesEnd) });
   const [state, setState] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [m, setM] = useState("");
@@ -311,7 +333,7 @@ function PassRow({ p, fresh, onSaved }: { p: Pass; fresh?: boolean; onSaved: (m:
   }
   const cell = "flex flex-col gap-1";
   return (
-    <div className={`card-plain flex flex-wrap items-end gap-3 p-4 ${fresh ? "border-dashed" : ""}`}>
+    <div data-tour={tour ? "ps-row" : undefined} className={`card-plain flex flex-wrap items-end gap-3 p-4 ${fresh ? "border-dashed" : ""}`}>
       <div className={`${cell} min-w-[180px] flex-[2]`}><label className="label">{fresh ? "New pass name" : "Name"}</label><input className="field" value={f.name} onChange={set("name")} /></div>
       <div className={`${cell} min-w-[120px] flex-1`}><label className="label flex items-center gap-1.5">Price ₹<Tip text="What one pass costs, in rupees." /></label><input className="field" inputMode="decimal" value={f.price} onChange={set("price")} /></div>
       <div className={`${cell} min-w-[100px] flex-1`}><label className="label flex items-center gap-1.5">Fee ₹<Tip text="An extra charge added to each pass on top of the price. Leave 0 for none." /></label><input className="field" inputMode="decimal" value={f.fee} onChange={set("fee")} /></div>
@@ -398,7 +420,7 @@ function Volunteers() {
         </ul>
         <p className="muted mt-3 text-[13px]">Setting a new password signs that person out everywhere. Revoking access does the same, instantly.</p>
       </div>
-      <form onSubmit={create} className="card-plain flex min-w-0 flex-[1_1_300px] flex-col gap-3 p-4">
+      <form data-tour="vo-add" onSubmit={create} className="card-plain flex min-w-0 flex-[1_1_300px] flex-col gap-3 p-4">
         <h2 className="text-lg">Add volunteer</h2>
         {(["name", "email"] as const).map((k) => (
           <div key={k} className="flex flex-col gap-1"><label className="label" htmlFor={`v-${k}`}>{k}</label>
@@ -422,7 +444,7 @@ function Checkins() {
   return (
     <section>
       <h2 className="flex items-center gap-1.5 text-lg">Recent check-ins<Tip text="Newest scans first. Lines in red were refused: duplicate = that ticket was already used, invalid = no such ticket, revoked = cancelled or refunded." /></h2><Err m={err} />
-      <ul className="card-plain mt-3 divide-y divide-line">
+      <ul data-tour="ci-list" className="card-plain mt-3 divide-y divide-line">
         {data?.map((c, i) => (
           <li key={i} className="flex justify-between gap-3 px-4 py-2.5 text-sm">
             <span className={c.outcome === "admitted" ? "" : "text-crimson"}>
@@ -461,12 +483,12 @@ function Tools() {
   const hm = health.data?.health;
   return (
     <section className="flex flex-wrap gap-6">
-      <div className="card-plain basis-full p-5">
+      <div data-tour="tl-emails" className="card-plain basis-full p-5">
         <h2 className="flex items-center gap-1.5 text-lg">Emails<Tip text="Tickets and updates are emailed automatically. If an email could not be delivered after several tries it is marked failed. Press Send failed emails again to try once more. Check the buyer's email address first (Guests, Edit details)." /></h2>
         <p className="muted mt-1 text-sm tnum">{hm ? `${hm.pending_emails} waiting to send · ${hm.failed_emails} failed` : "Loading…"}</p>
         <button className="btn btn-quiet btn-calm mt-3 min-h-12 px-5 text-sm" onClick={retryEmails} disabled={busy === "mail" || !hm?.failed_emails} aria-busy={busy === "mail"}>{busy === "mail" && <span className="spinner" aria-hidden="true" />}Send failed emails again</button>
       </div>
-      <div className="card-plain min-w-[320px] flex-1 p-5">
+      <div data-tour="tl-export" className="card-plain min-w-[320px] flex-1 p-5">
         <h2 className="flex items-center gap-1.5 text-lg">Export &amp; print<Tip text="Excel (.xlsx) opens in Excel or Google Sheets. CSV is a plain file that opens anywhere. Print guest list makes a paper copy for the door in case phones fail." /></h2>
         <div className="mt-4 flex flex-wrap gap-3">
           <a className={dl} href="/api/admin/export?kind=attendees&format=xlsx">Attendees .xlsx</a>
@@ -477,7 +499,7 @@ function Tools() {
         </div>
         <p className="muted mt-4 text-[13px]">Exports contain full phone numbers and emails and are logged. Keep a copy on two admin phones before the event.</p>
       </div>
-      <form onSubmit={issue} className="card-plain flex min-w-[320px] flex-1 flex-col gap-3 p-5">
+      <form data-tour="tl-comp" onSubmit={issue} className="card-plain flex min-w-[320px] flex-1 flex-col gap-3 p-5">
         <h2 className="flex items-center gap-1.5 text-lg">Issue comp ticket<Tip text="A free ticket you create yourself, for a guest, a friend or someone who paid you another way. It takes seats from the pass you choose, and it is recorded in the Activity log with your reason." /></h2>
         <p className="muted text-sm">For guests who paid by other means. A reason is required and written to the audit log.</p>
         <div className="flex flex-col gap-1"><label className="label" htmlFor="c-pass">Pass</label>

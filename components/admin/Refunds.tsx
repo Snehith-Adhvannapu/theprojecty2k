@@ -26,7 +26,7 @@ export function Refunds() {
   const dl = "btn btn-quiet btn-calm min-h-11 px-4 text-sm";
   return (
     <section className="flex flex-col gap-5">
-      <div className="flex flex-wrap gap-3">
+      <div data-tour="rf-stats" className="flex flex-wrap gap-3">
         <div className="card-plain relative min-w-[160px] flex-1 px-5 py-4"><span className="absolute right-3.5 top-3.5"><Tip text="Total money that buyers paid but who won't get a ticket. Send it back, then mark it refunded." /></span><p className="label pr-6">Still to refund</p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.owedPaise)}</p><p className="muted text-[13px]">{t.owedCount} {t.owedCount === 1 ? "person" : "people"}</p></div>
         <div className="card-plain relative min-w-[160px] flex-1 px-5 py-4"><span className="absolute right-3.5 top-3.5"><Tip text="Money you have already sent back and recorded here." /></span><p className="label pr-6">Refunded so far</p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.refundedPaise)}</p><p className="muted text-[13px]">{t.refundedCount} {t.refundedCount === 1 ? "person" : "people"}</p></div>
       </div>

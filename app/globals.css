@@ -257,3 +257,15 @@ a, .card, .card-plain { transition: color 0.2s var(--ease-out), border-color 0.2
   .ok-ring, .ok-tick { animation: none; stroke-dashoffset: 0; }
   .ok-timer { animation: none; display: none; }
 }
+
+/* Admin tour: a crimson frame around what is being explained that moves between steps and breathes outward; the card rises in. */
+@keyframes tour-breathe { from { outline-offset: 2px; outline-color: var(--crimson); } to { outline-offset: 9px; outline-color: transparent; } }
+@keyframes tour-grow { from { transform: scaleX(0.6); } to { transform: none; } }
+@keyframes tour-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+.tour-ring { position: fixed; z-index: 61; pointer-events: none; border: 2px solid var(--crimson); border-radius: var(--radius); outline: 2px solid var(--crimson); animation: tour-breathe 1.6s var(--ease-out) infinite; transition: top 0.35s var(--ease-out), left 0.35s var(--ease-out), width 0.35s var(--ease-out), height 0.35s var(--ease-out); }
+.tour-card { animation: slide-up 0.35s var(--ease-out) both; transition: top 0.35s var(--ease-out), left 0.35s var(--ease-out); }
+.tour-bar { transform-origin: left; animation: tour-grow 0.5s var(--ease-out) both; }
+.tour-tap { animation: tour-nudge 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring, .tour-card, .tour-bar, .tour-tap { animation: none; transition: none; }
+}

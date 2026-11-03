@@ -52,7 +52,7 @@ export function Contacts() {
 
   return (
     <section className="flex flex-col gap-5">
-      <div className="card-plain p-5">
+      <div data-tour="ct-template" className="card-plain p-5">
         <h2 className="flex items-center gap-1.5 text-lg">Message template<Tip text="Your default WhatsApp message. Words in [square brackets] are replaced with each person's own details when you tap their WhatsApp button." /></h2>
         <p className="muted mt-1 text-sm">Write once. Every WhatsApp button below fills in the person&apos;s details. Saved on this device.</p>
         <label htmlFor="tpl" className="sr-only">WhatsApp message</label>
@@ -63,7 +63,7 @@ export function Contacts() {
         {sample && <p className="muted mt-3 text-[13px]"><strong className="text-fg">Preview for {sample.name}:</strong> {preview}</p>}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by status">
+      <div data-tour="ct-filters" className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by status">
         {FILTERS.map(([k, l]) => <button key={k} className={`btn btn-quiet btn-calm min-h-11 px-4 text-sm ${status === k ? "!border-crimson" : ""}`} aria-pressed={status === k} onClick={() => setStatus(k)}>{l}</button>)}
       </div>
       <div className="flex flex-wrap items-center gap-3">
@@ -71,7 +71,7 @@ export function Contacts() {
         <input id="cq" className="field min-w-[220px] flex-1" placeholder="Search name, phone, email or Instagram" value={q} onChange={(e) => setQ(e.target.value)} />
         <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--crimson)]" checked={unique} onChange={(e) => setUnique(e.target.checked)} />One row per phone number <Tip text="Someone who tried more than once appears once, showing their most complete order. Untick to see every order." /></label>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
+      <div data-tour="ct-export" className="flex flex-wrap items-center gap-3">
         <a className={dl} href={exp("xlsx")}>Export Excel (.xlsx)</a>
         <a className={dl} href={exp("csv")}>Export CSV</a>
         <span className="muted text-[13px]">{rows ? `${rows.length} ${rows.length === 1 ? "person" : "people"}` : ""} · exports use the filter above and are logged.</span>
@@ -117,7 +117,7 @@ export function Activity() {
       {err && <p role="alert" className="rounded-sm border border-danger p-3 text-sm">{err}</p>}
       {!rows && !err && <div className="skeleton h-48" aria-busy="true" />}
       {rows && (
-        <ul className="card-plain divide-y divide-line">
+        <ul data-tour="ac-list" className="card-plain divide-y divide-line">
           {rows.length === 0 && <li className="muted p-5 text-sm">No activity yet.</li>}
           {rows.map((r, i) => (
             <li key={i} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm">

@@ -33,9 +33,9 @@ const waConfirm = (phone: string, name: string, amountPaise: number, utr: string
 };
 
 /** Call + WhatsApp buttons so the admin can confirm with the buyer before deciding. */
-function Contact({ r, hint = true }: { r: Row; hint?: boolean }) {
+function Contact({ r, hint = true, tour }: { r: Row; hint?: boolean; tour?: boolean }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div data-tour={tour ? "pay-contact" : undefined} className="flex flex-col gap-2">
       {hint && <p className="muted text-[13px]">Not sure it&apos;s genuine? Ask the buyer first. <Tip text="Call or WhatsApp the buyer and ask them to confirm their payment. These buttons don't change the order." /></p>}
       <div className="flex flex-wrap gap-3">
       <a className="btn btn-quiet btn-calm min-h-11 flex-1 sm:flex-none sm:px-5" href={`tel:${r.buyerPhone}`}>Call buyer</a>
@@ -73,15 +73,15 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
   if (!q) return <div className="skeleton h-64" aria-busy="true" />;
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-baseline justify-between gap-3">
+      <div data-tour="pay-head" className="flex items-baseline justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-lg">To verify <span className="muted tnum">({q.pending.length})</span><Tip text="Buyers who paid and sent a UTR (12-digit UPI reference) and a screenshot. Open your bank statement and look for that exact UTR and amount before you approve." /></h2>
         <button className="muted inline-flex min-h-11 items-center text-sm hover:text-fg" onClick={load}>Refresh</button>
       </div>
       {q.pending.length === 0 && <p className="card-plain muted p-5 text-sm">Nothing waiting. New payments show up here as soon as buyers submit their UTR.</p>}
-      {q.pending.map((r) => <Pending key={r.id} r={r} done={load} focus={r.id === focusOrder} tpls={tpls} onSaved={setTpls} />)}
+      {q.pending.map((r, ri) => <Pending key={r.id} r={r} first={ri === 0} done={load} focus={r.id === focusOrder} tpls={tpls} onSaved={setTpls} />)}
 
       {q.reviewed.length > 0 && (
-        <section className="mt-4">
+        <section data-tour="pay-reviewed" className="mt-4">
           <h2 className="flex items-center gap-1.5 text-lg">Reviewed<Tip text="Payments you already approved or rejected. If you rejected someone by mistake, use Change to approved. If their money did arrive, use Money received? Refund." /></h2>
           <ul className="card-plain mt-3 divide-y divide-line">
             {q.reviewed.map((r) => (
@@ -149,7 +149,7 @@ function Reverse({ r, done }: { r: Row; done: () => void }) {
   );
 }
 
-function Pending({ r, done, focus, tpls, onSaved }: { r: Row; done: () => void; focus: boolean; tpls: WaTemplates; onSaved: (t: WaTemplates) => void }) {
+function Pending({ r, done, focus, first, tpls, onSaved }: { r: Row; done: () => void; focus: boolean; first?: boolean; tpls: WaTemplates; onSaved: (t: WaTemplates) => void }) {
   const [mode, setMode] = useState<"idle" | "confirm" | "reject">("idle");
   const [reason, setReason] = useState("");
   const [kind, setKind] = useState<WaKind>("fix");
@@ -189,7 +189,7 @@ function Pending({ r, done, focus, tpls, onSaved }: { r: Row; done: () => void; 
   }
 
   return (
-    <article id={`pay-${r.id}`} className={`card p-5 ${focus ? "!border-crimson" : ""}`} aria-label={`Payment from ${r.buyerName}`}>
+    <article id={`pay-${r.id}`} data-tour={first ? "pay-card" : undefined} className={`card p-5 ${focus ? "!border-crimson" : ""}`} aria-label={`Payment from ${r.buyerName}`}>
       <div className="flex flex-col gap-5 sm:flex-row">
         {r.hasProof ? (
           <a href={`/api/admin/orders/${r.id}/proof`} target="_blank" rel="noreferrer" className="shrink-0 self-start" aria-label="Open the payment screenshot full size">
@@ -212,10 +212,10 @@ function Pending({ r, done, focus, tpls, onSaved }: { r: Row; done: () => void; 
 
       {mode === "idle" && (
         <div className="mt-5 flex flex-col gap-3">
-          <Contact r={r} />
+          <Contact r={r} tour={first} />
           <div className="flex flex-wrap gap-3">
-          <button className="btn btn-primary btn-calm min-h-12 flex-1 sm:flex-none sm:px-8" onClick={() => setMode("confirm")} disabled={busy}>Approve</button>
-          <button className="btn btn-quiet btn-calm min-h-12 flex-1 sm:flex-none sm:px-8" onClick={() => setMode("reject")} disabled={busy}>Reject…</button>
+          <button className="btn btn-primary btn-calm min-h-12 flex-1 sm:flex-none sm:px-8" data-tour={first ? "pay-approve" : undefined} onClick={() => setMode("confirm")} disabled={busy}>Approve</button>
+          <button className="btn btn-quiet btn-calm min-h-12 flex-1 sm:flex-none sm:px-8" data-tour={first ? "pay-reject" : undefined} onClick={() => setMode("reject")} disabled={busy}>Reject…</button>
           </div>
         </div>
       )}

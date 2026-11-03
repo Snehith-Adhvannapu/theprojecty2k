@@ -61,7 +61,7 @@ export function PageText() {
   const rawSet = (k: "about" | "last" | "who") => (v: string) => { setRaw({ ...raw, [k]: v }); setState("idle"); };
 
   return (
-    <form className="flex max-w-[860px] flex-col gap-3" onSubmit={(e) => { e.preventDefault(); run(payload(), "Saved. The landing page updates in a few seconds."); }}>
+    <form data-tour="pt-form" className="flex max-w-[860px] flex-col gap-3" onSubmit={(e) => { e.preventDefault(); run(payload(), "Saved. The landing page updates in a few seconds."); }}>
       <h2 className="text-lg">Landing page text</h2>
       <p className="muted text-sm">Every section of the landing page. Put <strong className="text-fg">*stars*</strong> around words to show them in the red accent style. Leave a blank line between paragraphs.</p>
 

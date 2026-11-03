@@ -165,7 +165,7 @@ export function Analytics() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Time range">
+      <div data-tour="an-ranges" className="flex flex-wrap items-center gap-2" role="group" aria-label="Time range">
         {RANGES.map(([n, l]) => (
           <button key={n} className={`btn btn-quiet btn-calm min-h-11 px-4 text-sm ${days === n ? "!border-crimson" : ""}`} aria-pressed={days === n} onClick={() => { setDays(n); setD(null); load(n); }}>{l}</button>
         ))}

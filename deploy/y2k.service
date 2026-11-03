@@ -1,0 +1,16 @@
+[Unit]
+Description=Project Y2K (Next.js)
+After=network.target postgresql.service
+
+[Service]
+User=y2k
+WorkingDirectory=/opt/y2k/current
+EnvironmentFile=/etc/y2k.env
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -p 3000 -H 127.0.0.1
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

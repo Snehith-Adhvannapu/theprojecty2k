@@ -1,0 +1,13 @@
+{
+	email snehithadvan@gmail.com
+}
+
+aws.projecty2k.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}
+
+# Plain-HTTP access by IP, for smoke tests before DNS points here. Remove at cutover.
+http://3.24.111.142 {
+	reverse_proxy 127.0.0.1:3000
+}

@@ -33,12 +33,14 @@ const waConfirm = (phone: string, name: string, amountPaise: number, utr: string
 };
 
 /** Call + WhatsApp buttons so the admin can confirm with the buyer before deciding. */
-function Contact({ r }: { r: Row }) {
+function Contact({ r, hint = true }: { r: Row; hint?: boolean }) {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-col gap-2">
+      {hint && <p className="muted text-[13px]">Not sure it&apos;s genuine? Ask the buyer first. <Tip text="Call or WhatsApp the buyer and ask them to confirm their payment. These buttons don't change the order." /></p>}
+      <div className="flex flex-wrap gap-3">
       <a className="btn btn-quiet btn-calm min-h-11 flex-1 sm:flex-none sm:px-5" href={`tel:${r.buyerPhone}`}>Call buyer</a>
       <a className="btn btn-quiet btn-calm min-h-11 flex-1 sm:flex-none sm:px-5" href={waConfirm(r.buyerPhone, r.buyerName, r.amountPaise, r.utr)} target="_blank" rel="noreferrer">WhatsApp to confirm</a>
-      <span className="flex items-center"><Tip text="Not sure the payment is genuine? Call or WhatsApp the buyer first and ask them to confirm. Nothing is changed by these buttons." /></span>
+      </div>
     </div>
   );
 }
@@ -230,7 +232,7 @@ function Pending({ r, done, focus, tpls, onSaved }: { r: Row; done: () => void; 
       {mode === "reject" && (
         <div className="mt-5 flex flex-col gap-3">
           <p className="text-sm font-medium">Not sure? Check with the buyer first. If they confirm, you can still change a rejection to approved later.</p>
-          <Contact r={r} />
+          <Contact r={r} hint={false} />
           <label htmlFor={`rr-${r.id}`} className="text-sm font-medium">Reason (the buyer sees this, by email and on their order page)</label>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Quick reasons">
             {REASONS.map((x) => (

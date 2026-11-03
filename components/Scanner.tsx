@@ -247,11 +247,12 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
   );
 }
 
-function Lookup({ onBack, onAdmit }: { onBack: () => void; onAdmit: (g: Guest) => void }) {
+function Lookup({ onBack, onAdmit }: { onBack: () => void; onAdmit: (g: Guest) => Promise<void> }) {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Guest[] | null>(null);
   const [err, setErr] = useState("");
-  const [sure, setSure] = useState("");
+  const [sending, setSending] = useState("");
+  const [again, setAgain] = useState(0);
 
   useEffect(() => {
     if (q.trim().length < 2) { setRows(null); return; }
@@ -263,7 +264,16 @@ function Lookup({ onBack, onAdmit }: { onBack: () => void; onAdmit: (g: Guest) =
       } catch { setErr("No connection. Check signal and try again."); }
     }, 250);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, again]);
+
+  // One tap admits. The result screen shows who was admitted; the list then refreshes so the guest reads "Already used".
+  async function admit(g: Guest) {
+    if (sending) return;
+    setSending(g.id);
+    await onAdmit(g);
+    setSending("");
+    setAgain((n) => n + 1);
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -283,21 +293,17 @@ function Lookup({ onBack, onAdmit }: { onBack: () => void; onAdmit: (g: Guest) =
               <p className="text-base font-semibold">{g.name}</p>
               <p className="muted text-[13px] tnum">{g.shortCode} · {g.passName} · Admits {g.admits} · …{g.phoneLast4}</p>
               {valid ? (
-                sure === g.id ? (
-                <div className="mt-1.5 flex gap-2">
-                  <button className="btn btn-primary btn-calm min-h-[52px] flex-[2] text-[15px]" onClick={() => { setSure(""); onAdmit(g); }}>Yes, admit {g.admits > 1 ? `${g.admits} people` : "1 person"}</button>
-                  <button className="btn btn-quiet btn-calm min-h-[52px] flex-1 text-[15px]" onClick={() => setSure("")}>Cancel</button>
-                </div>
-              ) : (
-                <button className="btn btn-primary btn-calm mt-1.5 min-h-[52px] text-[15px]" onClick={() => setSure(g.id)}>ADMIT</button>
-              )
+                <button className="btn btn-primary btn-calm mt-1.5 min-h-14 text-base" onClick={() => admit(g)} disabled={!!sending} aria-busy={sending === g.id}>
+                  {sending === g.id && <span className="spinner" aria-hidden="true" />}
+                  {sending === g.id ? "Admitting…" : g.admits > 1 ? `ADMIT ${g.admits} PEOPLE` : "ADMIT"}
+                </button>
               ) : (
                 <p className="text-[13px] text-crimson">{g.status === "used" ? `Already used${g.usedAt ? ` at ${formatTimeIST(g.usedAt)}` : ""}` : "Cancelled / refunded: do not admit"}</p>
               )}
             </div>
           );
         })}
-        <p className="muted text-[13px]">Match the name to their photo ID before admitting. Manual admits are logged with your name.</p>
+        <p className="muted text-[13px]">Check the name against their photo ID, then tap ADMIT once. It admits straight away and is logged with your name.</p>
       </div>
     </div>
   );
@@ -317,20 +323,24 @@ function StateScreen({ v, onDismiss }: { v: Verdict; onDismiss: () => void }) {
   if (v.kind === "admit") {
     return (
       <button className="state state-admit" onClick={onDismiss} aria-live="assertive">
-        <Icon kind="check" />
-        <p className="big text-7xl">ADMIT</p>
-        <p className="mt-2 text-[28px] font-extrabold leading-tight">{v.name}</p>
-        <p className="text-[15px]">{v.pass}</p>
-        <p className="big mt-3 text-[56px]">ADMITS {v.admits}</p>
-        <p className="mt-4 text-[15px] font-semibold">Check the name on their photo ID</p>
-        <p className="mt-1 text-[13px]">Back to camera in 3 sec · tap to skip</p>
+        <span className="ok-ripple" aria-hidden="true" /><span className="ok-ripple ok-ripple-2" aria-hidden="true" />
+        <svg className="ok-mark size-28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle className="ok-ring" cx="12" cy="12" r="10.5" /><path className="ok-tick" d="M7 12.5l3.2 3.2L17 9" strokeWidth="2.4" />
+        </svg>
+        <p className="big rise-1 text-7xl">ADMIT</p>
+        <p className="rise-2 mt-2 text-[28px] font-extrabold leading-tight">{v.name}</p>
+        <p className="rise-2 text-[15px]">{v.pass}</p>
+        <p className="big rise-3 mt-3 text-[56px]">ADMITS {v.admits}</p>
+        <p className="rise-4 mt-4 text-[15px] font-semibold">Check the name on their photo ID</p>
+        <p className="rise-4 mt-1 text-[13px]">Back to camera in 3 sec · tap to skip</p>
+        <span className="ok-timer" aria-hidden="true" />
       </button>
     );
   }
   if (v.kind === "reject") {
     return (
       <button className="state state-reject" onClick={onDismiss} aria-live="assertive">
-        <Icon kind="cross" />
+        <span className="shake"><Icon kind="cross" /></span>
         <p className="big text-[64px]">{v.title}</p>
         <p className="mt-2 text-xl font-extrabold tracking-[0.08em]">{v.reason}</p>
         {v.detail && <p className="text-base">{v.detail}</p>}

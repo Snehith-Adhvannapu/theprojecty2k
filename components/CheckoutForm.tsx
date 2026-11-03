@@ -129,7 +129,7 @@ export function CheckoutForm() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-lg font-semibold">{pass.name}</p>
-              <p className="muted mt-1 flex items-center gap-1.5 text-sm">Admits {pass.admits} · {paise(pass.pricePaise)} each<Tip text={pass.admits > 1 ? `One ticket lets ${pass.admits} people in. You get one QR code, and it is scanned once at the door for everyone on it.` : "One ticket lets one person in. Buying 2 gives you 2 separate tickets."} /></p>
+              <p className="muted mt-1 text-sm">Admits {pass.admits} · {paise(pass.pricePaise)} each{" "}<Tip text={pass.admits > 1 ? `One ticket lets ${pass.admits} people in. You get one QR code, and it is scanned once at the door for everyone on it.` : "One ticket lets one person in. Buying 2 gives you 2 separate tickets."} /></p>
             </div>
             <div className="flex items-center gap-1" role="group" aria-label="Quantity">
               <button type="button" className="btn btn-quiet btn-calm size-11 min-h-11 p-0 text-xl" aria-label="Fewer passes" disabled={qty <= 1 || busy} onClick={() => setQty(qty - 1)}>−</button>

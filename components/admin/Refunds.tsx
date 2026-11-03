@@ -27,8 +27,8 @@ export function Refunds() {
   return (
     <section className="flex flex-col gap-5">
       <div className="flex flex-wrap gap-3">
-        <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label flex items-center gap-1.5">Still to refund<Tip text="Total money that buyers paid but who won't get a ticket. Send it back, then mark it refunded." /></p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.owedPaise)}</p><p className="muted text-[13px]">{t.owedCount} {t.owedCount === 1 ? "person" : "people"}</p></div>
-        <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label flex items-center gap-1.5">Refunded so far<Tip text="Money you have already sent back and recorded here." /></p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.refundedPaise)}</p><p className="muted text-[13px]">{t.refundedCount} {t.refundedCount === 1 ? "person" : "people"}</p></div>
+        <div className="card-plain relative min-w-[160px] flex-1 px-5 py-4"><span className="absolute right-3.5 top-3.5"><Tip text="Total money that buyers paid but who won't get a ticket. Send it back, then mark it refunded." /></span><p className="label pr-6">Still to refund</p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.owedPaise)}</p><p className="muted text-[13px]">{t.owedCount} {t.owedCount === 1 ? "person" : "people"}</p></div>
+        <div className="card-plain relative min-w-[160px] flex-1 px-5 py-4"><span className="absolute right-3.5 top-3.5"><Tip text="Money you have already sent back and recorded here." /></span><p className="label pr-6">Refunded so far</p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.refundedPaise)}</p><p className="muted text-[13px]">{t.refundedCount} {t.refundedCount === 1 ? "person" : "people"}</p></div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <a className={dl} href="/api/admin/export?kind=refunds&format=xlsx">Export Excel (.xlsx)</a>

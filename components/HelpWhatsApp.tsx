@@ -19,9 +19,9 @@ export function HelpWhatsApp({ orderId, amountPaise }: { orderId: string; amount
     <section className="card-plain mt-4 p-5" aria-label="Help">
       <p className="text-base font-semibold">Having trouble?</p>
       <p className="muted mt-1 text-sm">Tell us what went wrong. It opens WhatsApp with your order reference filled in, and a real person replies.</p>
-      <ul className="mt-3 flex flex-wrap gap-2">
+      <ul className="mt-3 grid gap-2 sm:grid-cols-2">
         {ISSUES.map((x) => (
-          <li key={x}><a className="btn btn-quiet btn-calm min-h-11 px-3 text-left text-[13px]" href={link(x)} target="_blank" rel="noopener noreferrer">{x}</a></li>
+          <li key={x}><a className="btn btn-quiet btn-calm min-h-11 w-full px-3 text-center text-[13px]" href={link(x)} target="_blank" rel="noopener noreferrer">{x}</a></li>
         ))}
       </ul>
     </section>

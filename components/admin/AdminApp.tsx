@@ -89,7 +89,7 @@ function useLoad<T>(url: string) {
 
 const Err = ({ m }: { m: string }) => (m ? <p role="alert" className="mt-3 rounded-sm border border-danger p-3 text-sm">{m}</p> : null);
 const Stat = ({ k, v, tip }: { k: string; v: React.ReactNode; tip?: string }) => (
-  <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label flex items-center gap-1.5">{k}{tip && <Tip text={tip} />}</p><p className="tnum mt-1.5 text-[32px] font-semibold">{v}</p></div>
+  <div className="card-plain relative min-w-[160px] flex-1 px-5 py-4">{tip && <span className="absolute right-3.5 top-3.5"><Tip text={tip} /></span>}<p className="label pr-6">{k}</p><p className="tnum mt-1.5 text-[32px] font-semibold">{v}</p></div>
 );
 
 function Overview({ go }: { go: (t: Tab) => void }) {
@@ -115,7 +115,7 @@ function Overview({ go }: { go: (t: Tab) => void }) {
       <section aria-label="Collections" className="card-plain p-5">
         <div className="flex flex-wrap gap-x-10 gap-y-5">
           {([["Collected (tickets)", s.money.gross, "Money from approved UPI payments, one entry per issued ticket. Compare it with your bank statement."], ["Refunded", s.money.refunds, "Money you have already sent back and marked as refunded."], ["Still to refund", s.money.owed, "Money buyers paid that you still need to send back (people who paid but won't get a ticket)."]] as const).map(([k, v, t]) => (
-            <div key={k}><p className="label flex items-center gap-1.5">{k}<Tip text={t} /></p><p className="tnum mt-1 text-2xl font-semibold">{paise(v)}</p></div>
+            <div key={k}><p className="label">{k} <Tip text={t} /></p><p className="tnum mt-1 text-2xl font-semibold">{paise(v)}</p></div>
           ))}
         </div>
         <p className="muted mt-4 text-[13px]">Collected = approved UPI payments (tickets issued). Money you should be holding for this event ≈ collected + still to refund. Comp tickets ({s.counts.comps}) carry no money. Refunds are sent from your UPI app, then marked here.</p>

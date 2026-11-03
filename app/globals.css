@@ -233,3 +233,27 @@ a, .card, .card-plain { transition: color 0.2s var(--ease-out), border-color 0.2
   .tip-btn .tip-i { transition: none; }
   .tip-btn:hover .tip-i, .tip-btn[aria-expanded="true"] .tip-i { transform: none; }
 }
+
+/* Scanner: a successful scan draws the ring and tick, sends out two soft ripples, lifts the text in line by line,
+   and runs a bar down as the screen counts back to the camera. A refusal shakes once. All of it is skipped for reduced motion. */
+@keyframes ok-draw { to { stroke-dashoffset: 0; } }
+@keyframes ok-ripple { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.45; } 100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; } }
+@keyframes ok-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes ok-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes shake-x { 0%, 100% { transform: none; } 20% { transform: translateX(-10px); } 40% { transform: translateX(9px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(4px); } }
+.state-admit { overflow: hidden; }
+.ok-ripple { position: absolute; left: 50%; top: 32%; width: 14rem; height: 14rem; border-radius: 9999px; border: 3px solid currentColor; pointer-events: none; animation: ok-ripple 1.3s var(--ease-out) both; }
+.ok-ripple-2 { animation-delay: 0.25s; }
+.ok-mark { animation: pop 0.4s var(--ease-out) both; }
+.ok-ring { stroke-dasharray: 66; stroke-dashoffset: 66; animation: ok-draw 0.45s var(--ease-out) 0.05s forwards; }
+.ok-tick { stroke-dasharray: 16; stroke-dashoffset: 16; animation: ok-draw 0.3s var(--ease-out) 0.35s forwards; }
+.rise-1, .rise-2, .rise-3, .rise-4 { animation: ok-rise 0.45s var(--ease-out) both; }
+.rise-1 { animation-delay: 0.2s; } .rise-2 { animation-delay: 0.3s; } .rise-3 { animation-delay: 0.4s; } .rise-4 { animation-delay: 0.5s; }
+.ok-timer { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: currentColor; opacity: 0.55; transform-origin: left; animation: ok-timer 3s linear 0.1s both; }
+.shake { display: inline-flex; animation: shake-x 0.45s ease-out 0.1s both; }
+@media (prefers-reduced-motion: reduce) {
+  .ok-ripple, .ok-mark, .rise-1, .rise-2, .rise-3, .rise-4, .shake { animation: none; }
+  .ok-ripple { display: none; }
+  .ok-ring, .ok-tick { animation: none; stroke-dashoffset: 0; }
+  .ok-timer { animation: none; display: none; }
+}

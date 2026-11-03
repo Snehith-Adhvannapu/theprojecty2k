@@ -114,7 +114,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
   return (
     <div className="slide-up mt-6">
       <h1 className="text-[26px] leading-tight">Pay {paise(amountPaise)} by UPI</h1>
-      <p className="muted mt-2 flex flex-wrap items-center gap-x-1.5 text-sm">Your pass is held for <span className="tnum text-fg">{left}</span>. Pay the exact amount, then send us the proof below.<Tip text={`We reserve your pass for ${e.limits.holdMinutes} minutes so nobody else takes it while you pay. If the time runs out, the pass goes back on sale. Already paid late? You can still send proof if passes are left, or tap Having trouble? at the bottom.`} /></p>
+      <p className="muted mt-2 text-sm">Your pass is held for <span className="tnum text-fg">{left}</span>. Pay the exact amount, then send us the proof below.{" "}<Tip text={`We reserve your pass for ${e.limits.holdMinutes} minutes so nobody else takes it while you pay. If the time runs out, the pass goes back on sale. Already paid late? You can still send proof if passes are left, or tap Having trouble? at the bottom.`} /></p>
 
       {note && (
         <div role="alert" className="mt-4 rounded-sm border border-blood bg-[var(--selected)] p-4">
@@ -137,7 +137,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
               <button type="button" className="btn btn-quiet btn-calm min-h-11 shrink-0 px-4 text-sm" onClick={copy}>{copied ? "Copied" : "Copy"}</button>
             </div>
             <p className="tnum mt-3 text-2xl font-semibold">{paise(amountPaise)}</p>
-            <p className="muted flex items-center gap-1.5 text-[13px]">Pay exactly this amount. Reference: {ref}<Tip text="Your order reference. Add it as the payment note if your UPI app allows. It helps us find your payment. It is not the UTR." /></p>
+            <p className="muted text-[13px]">Pay exactly this amount. Reference: {ref}{" "}<Tip text="Your order reference. Add it as the payment note if your UPI app allows. It helps us find your payment. It is not the UTR." /></p>
             <a href={link} className="btn btn-primary btn-calm btn-block mt-4 sm:hidden">Open my UPI app</a>
           </div>
         </div>

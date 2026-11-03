@@ -23,10 +23,32 @@ function cloudinaryCreds() {
   return m ? { key: m[1], secret: m[2], cloud: m[3] } : null;
 }
 
+/** Reads a proof stored with an s3:// url. */
+export async function readS3Proof(url: string): Promise<Buffer> {
+  const m = /^s3:\/\/([^/]+)\/(.+)$/.exec(url);
+  if (!m) throw new AppError("NOT_FOUND", "No proof on this order.", 404);
+  const { S3Client, GetObjectCommand } = await import("@aws-sdk/client-s3");
+  const out = await new S3Client({}).send(new GetObjectCommand({ Bucket: m[1], Key: m[2] }));
+  return Buffer.from(await out.Body!.transformToByteArray());
+}
+
 export async function storeProof(bytes: Buffer): Promise<StoredProof> {
   if (bytes.length > MAX_PROOF_BYTES) throw new AppError("FILE_TOO_BIG", "That image is too large. Try a smaller screenshot.", 413);
   const mime = sniffImage(bytes);
   if (!mime) throw new AppError("BAD_FILE", "Upload a JPG, PNG or WebP screenshot.", 400);
+
+  // S3 first (private bucket, server role credentials). Stored as s3://bucket/key and only ever read back by admins.
+  const bucket = process.env.S3_UPLOADS_BUCKET;
+  if (bucket) {
+    const key = `proofs/${crypto.randomBytes(24).toString("base64url")}`;
+    try {
+      const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+      await new S3Client({}).send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: mime }));
+    } catch {
+      throw new AppError("UPLOAD_FAILED", "Couldn't upload your screenshot. Please try again.", 502);
+    }
+    return { url: `s3://${bucket}/${key}`, data: null, mime };
+  }
 
   const c = cloudinaryCreds();
   if (!c) return { url: null, data: bytes, mime };

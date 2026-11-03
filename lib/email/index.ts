@@ -20,7 +20,28 @@ interface Mail {
   attachments?: { filename: string; content: string }[];
 }
 
+/** Amazon SES (EMAIL_PROVIDER=ses). Uses the server's role credentials, so there is no key to leak. */
+async function deliverSes(mail: Mail) {
+  const { SESv2Client, SendEmailCommand } = await import("@aws-sdk/client-sesv2");
+  const from = process.env.EMAIL_FROM || "Project Y2K <tickets@mail.projecty2k.com>";
+  await new SESv2Client({}).send(new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [mail.to] },
+    Content: {
+      Simple: {
+        Subject: { Data: mail.subject, Charset: "UTF-8" },
+        Body: { Html: { Data: mail.html, Charset: "UTF-8" }, Text: { Data: mail.text, Charset: "UTF-8" } },
+        Attachments: mail.attachments?.map((a) => ({
+          FileName: a.filename, RawContent: Buffer.from(a.content, "base64"),
+          ContentType: "application/pdf", ContentDisposition: "ATTACHMENT", ContentTransferEncoding: "BASE64",
+        })),
+      },
+    },
+  }));
+}
+
 async function deliver(mail: Mail) {
+  if (process.env.EMAIL_PROVIDER === "ses") return deliverSes(mail);
   const key = process.env.EMAIL_API_KEY;
   if (!key) {
     // Serverless filesystems are read-only: throwing keeps the outbox row pending for retry.

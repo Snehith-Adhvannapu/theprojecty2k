@@ -70,10 +70,12 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
     );
   }
   if (s.status === "needs_refund") {
-    return <Notice title="These passes sold out before we could confirm your payment.">You will be refunded in full to the account you paid from, and we&apos;ve emailed you. Questions? {help}.</Notice>;
+    return s.reviewNote
+      ? <Notice title="We couldn&apos;t offer you a ticket.">{s.reviewNote}. Your payment of {paise(s.amountPaise)} will be refunded in full to the account you paid from, and we&apos;ve emailed you. Questions? {help}.</Notice>
+      : <Notice title="These passes sold out before we could confirm your payment.">You will be refunded in full to the account you paid from, and we&apos;ve emailed you. Questions? {help}.</Notice>;
   }
   if (s.status === "refunded") {
-    return <Notice title="This order was refunded.">The tickets on it no longer work. </Notice>;
+    return <Notice title="Your refund has been sent.">{paise(s.amountPaise)} was sent back to the account you paid from. Banks can take a short while to show it. Questions? {help}.</Notice>;
   }
 
   if (s.status === "rejected") {

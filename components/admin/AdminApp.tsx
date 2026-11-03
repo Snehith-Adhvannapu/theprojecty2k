@@ -7,13 +7,14 @@ import { api } from "./api";
 import { Payments } from "./Payments";
 import { Activity, Contacts } from "./Contacts";
 import { PageText } from "./PageText";
+import { Refunds } from "./Refunds";
 
-const TABS = ["Overview", "Payments", "Contacts", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools"] as const;
+const TABS = ["Overview", "Payments", "Contacts", "Refunds", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools"] as const;
 type Tab = (typeof TABS)[number];
 
 interface Summary {
   counts: { sold: number; capacity: number; held: number; left: number; comps: number; checked_in_tickets: number; checked_in_people: number; people_expected: number };
-  money: { gross: number; refunds: number; fees: number; net: number };
+  money: { gross: number; refunds: number; fees: number; net: number; owed: number };
   needsRefund: { id: string; buyer_name: string; amount_paise: number }[];
   health: { pending_orders: number; awaiting_review: number; failed_emails: number; pending_emails: number; lastWebhook: string | null; fakePayments: boolean };
 }
@@ -47,6 +48,7 @@ export function AdminApp({ name, initialTab, focusOrder }: { name: string; initi
           {tab === "Payments" && <Payments focusOrder={focusOrder} />}
           {tab === "Contacts" && <Contacts />}
           {tab === "Activity" && <Activity />}
+          {tab === "Refunds" && <Refunds />}
           {tab === "Page text" && <PageText />}
           {tab === "Guests" && <Guests />}
           {tab === "Passes" && <Passes />}
@@ -96,19 +98,17 @@ function Overview({ go }: { go: (t: Tab) => void }) {
       </section>
       <section aria-label="Collections" className="card-plain p-5">
         <div className="flex flex-wrap gap-x-10 gap-y-5">
-          {([["Collected", s.money.gross], ["Refunded", s.money.refunds], ["Net", s.money.net]] as const).map(([k, v]) => (
+          {([["Collected (tickets)", s.money.gross], ["Refunded", s.money.refunds], ["Still to refund", s.money.owed]] as const).map(([k, v]) => (
             <div key={k}><p className="label">{k}</p><p className="tnum mt-1 text-2xl font-semibold">{paise(v)}</p></div>
           ))}
         </div>
-        <p className="muted mt-4 text-[13px]">Counts approved UPI payments only. Net = collected − refunded. Comp tickets ({s.counts.comps}) carry no money. Refunds are sent from your UPI app, then marked here.</p>
+        <p className="muted mt-4 text-[13px]">Collected = approved UPI payments (tickets issued). Money you should be holding for this event ≈ collected + still to refund. Comp tickets ({s.counts.comps}) carry no money. Refunds are sent from your UPI app, then marked here.</p>
       </section>
       {s.needsRefund.length > 0 && (
         <section className="card-plain p-5">
-          <h2 className="text-lg">Paid but no ticket (refund these)</h2>
-          <ul className="mt-3 divide-y divide-line">
-            {s.needsRefund.map((o) => <li key={o.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-sm"><span>{o.buyer_name} · <span className="muted">{o.id.slice(0, 8)}</span></span><span className="flex items-center gap-3"><span className="tnum">{paise(o.amount_paise)}</span><button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={async () => { try { await api(`/api/admin/orders/${o.id}/refunded`, {}); reload(); } catch { /* shown on next load */ } }}>Mark refunded</button></span></li>)}
-          </ul>
-          <p className="muted mt-3 text-[13px]">Refund these buyers from your UPI app, tell them on WhatsApp, then tap Mark refunded.</p>
+          <h2 className="text-lg">Refunds to send ({s.needsRefund.length})</h2>
+          <p className="muted mt-2 text-sm">{paise(s.money.owed)} is owed back to buyers who paid but won&apos;t get a ticket.</p>
+          <button className="btn btn-primary btn-calm mt-3 min-h-12 px-6" onClick={() => go("Refunds")}>Open refunds</button>
         </section>
       )}
       <p className="muted text-[13px]">Emails waiting to send: {s.health.pending_emails} · Failed: {s.health.failed_emails}</p>

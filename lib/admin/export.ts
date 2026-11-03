@@ -3,9 +3,10 @@ import ExcelJS from "exceljs";
 import { allGuests, checkinHistory } from "@/lib/admin";
 import { formatFullIST } from "@/lib/time";
 import { listContacts, type StatusFilter } from "@/lib/admin/contacts";
+import { refundLedger } from "@/lib/payments/manual";
 
 export interface ExportOpts { status?: StatusFilter; unique?: boolean }
-type Kind = "attendees" | "checkins" | "contacts";
+type Kind = "attendees" | "checkins" | "contacts" | "refunds";
 
 // Spreadsheet formula injection: a name like "=HYPERLINK(...)" must stay text.
 const safe = (v: string | null | undefined) => (v && /^[=+\-@\t\r]/.test(v) ? `'${v}` : (v ?? ""));
@@ -14,6 +15,17 @@ type Cell = string | number;
 interface Table { name: string; header: string[]; rows: Cell[][] }
 
 export async function buildTables(kind: Kind, opts: ExportOpts = {}): Promise<Table[]> {
+  if (kind === "refunds") {
+    const l = await refundLedger();
+    const row = (r: (typeof l.owed)[number], state: string): Cell[] => [
+      safe(r.name), r.phone, state, r.amountPaise / 100, safe(r.reason), formatFullIST(r.at), r.method ?? "", safe(r.reference), safe(r.note), safe(r.by), r.orderId,
+    ];
+    return [{
+      name: "Refunds",
+      header: ["Name", "Phone", "Status", "Amount (Rs)", "Reason", "Date (IST)", "Refunded via", "Reference", "Note", "Refunded by", "Order ID"],
+      rows: [...l.owed.map((r) => row(r, "Owed")), ...l.done.map((r) => row(r, "Refunded"))],
+    }];
+  }
   if (kind === "contacts") {
     const c = await listContacts({ status: opts.status, unique: opts.unique });
     return [{

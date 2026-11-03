@@ -86,9 +86,10 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
                   {r.reviewNote && <span className="muted"> · {r.reviewNote}</span>}
                 </span>
                 <span className="flex flex-wrap items-center gap-x-4 gap-y-0">
-                  <span className={r.status === "paid" ? "" : "text-crimson"}>{r.status === "paid" ? "Approved" : r.status === "needs_refund" ? "Refund needed" : "Rejected"}</span>
+                  <span className={r.status === "paid" ? "" : "text-crimson"}>{r.status === "paid" ? "Approved" : r.status === "needs_refund" ? "Refund owed" : "Rejected"}</span>
                   {r.ticketToken && <a className="inline-flex min-h-11 items-center border-b border-blood" href={wa(r.buyerPhone, r.buyerName, r.ticketToken)} target="_blank" rel="noreferrer">Send on WhatsApp</a>}
                   {r.canReverse && <Reverse r={r} done={load} />}
+                  {r.canReverse && <Owe r={r} done={load} />}
                   {r.status !== "paid" && r.buyerPhone && <a className="inline-flex min-h-11 items-center border-b border-blood" href={`tel:${r.buyerPhone}`}>Call</a>}
                   {r.status !== "paid" && r.status !== "needs_refund" && <a className="inline-flex min-h-11 items-center border-b border-blood" href={waConfirm(r.buyerPhone, r.buyerName, r.amountPaise, r.utr)} target="_blank" rel="noreferrer">WhatsApp to confirm</a>}
                   {r.status !== "paid" && <a className="inline-flex min-h-11 items-center border-b border-blood" href={waNotConfirmed(r.buyerPhone, r.buyerName, r.id, r.reviewNote, r.status === "needs_refund")} target="_blank" rel="noreferrer">Tell them on WhatsApp</a>}
@@ -100,6 +101,18 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
       )}
     </div>
   );
+}
+
+/** A rejection where the money had in fact arrived: move it to the refund list. */
+function Owe({ r, done }: { r: Row; done: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  async function go() {
+    if (!window.confirm(`Add ${r.buyerName} (${paise(r.amountPaise)}) to the refund list? Use this when their money did arrive.`)) return;
+    setBusy(true); setMsg("");
+    try { await api(`/api/admin/orders/${r.id}/refund-owed`, {}); await done(); } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); setBusy(false); }
+  }
+  return <span className="flex flex-col items-end"><button className="inline-flex min-h-11 items-center border-b border-blood" onClick={go} disabled={busy}>Money received? Refund</button>{msg && <span role="alert" className="text-[13px] text-crimson">{msg}</span>}</span>;
 }
 
 /** Change a rejection to approved after the buyer confirmed. Issues and emails the ticket. */
@@ -143,7 +156,7 @@ function Pending({ r, done, focus }: { r: Row; done: () => void; focus: boolean 
     const r2 = await api<{ result: string }>(`/api/admin/orders/${r.id}/approve`, {});
     if (r2.result === "needs_refund") throw new Error("Passes sold out in the meantime. Marked as needing a refund; refund this buyer.");
   });
-  const reject = (resubmit: boolean) => run(() => api(`/api/admin/orders/${r.id}/reject`, { reason, resubmit }));
+  const reject = (resubmit: boolean, refund = false) => run(() => api(`/api/admin/orders/${r.id}/reject`, { reason, resubmit, refund }));
 
   return (
     <article id={`pay-${r.id}`} className={`card p-5 ${focus ? "!border-crimson" : ""}`} aria-label={`Payment from ${r.buyerName}`}>
@@ -200,10 +213,11 @@ function Pending({ r, done, focus }: { r: Row; done: () => void; focus: boolean 
           <input id={`rr-${r.id}`} className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Or type your own reason" disabled={busy} />
           <div className="flex flex-wrap gap-3">
             <button className="btn btn-primary btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(true)}>Ask to fix &amp; resubmit</button>
-            <button className="btn btn-quiet btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(false)}>Reject for good</button>
+            <button className="btn btn-quiet btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(false)}>Reject, no money received</button>
+            <button className="btn btn-quiet btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(false, true)}>Reject &amp; refund (money received)</button>
             <button className="btn btn-quiet btn-calm min-h-12" onClick={() => setMode("idle")} disabled={busy}>Back</button>
           </div>
-          <p className="muted text-[13px]"><strong className="text-fg">Fix &amp; resubmit</strong> keeps their pass for 2 more hours and emails them a link to send the right UTR or screenshot. <strong className="text-fg">Reject for good</strong> frees the pass and closes the order.</p>
+          <p className="muted text-[13px]"><strong className="text-fg">Fix &amp; resubmit</strong> keeps their pass for 2 more hours and emails them a link to send the right UTR or screenshot. <strong className="text-fg">Reject, no money received</strong> frees the pass and closes the order. <strong className="text-fg">Reject &amp; refund</strong> does the same but adds the buyer to the Refunds tab, so you can pay them back and keep the count.</p>
         </div>
       )}
     </article>

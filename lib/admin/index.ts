@@ -23,7 +23,8 @@ export async function summary() {
       COALESCE((SELECT SUM(admits) FROM tickets WHERE status = 'used'), 0)::int AS checked_in_people,
       COALESCE((SELECT SUM(admits) FROM tickets WHERE status IN ('valid','used')), 0)::int AS people_expected,
       COALESCE((SELECT SUM(amount_paise) FROM payments WHERE status IN ('captured','refunded')), 0)::int AS gross,
-      COALESCE((SELECT SUM(amount_paise) FROM payments WHERE status = 'refunded'), 0)::int AS refunds,
+      COALESCE((SELECT SUM(amount_paise) FROM refunds), 0)::int AS refunds,
+      COALESCE((SELECT SUM(amount_paise) FROM orders WHERE status = 'needs_refund'), 0)::int AS refunds_owed,
       COALESCE((SELECT SUM(fee_paise) FROM payments WHERE status IN ('captured','refunded')), 0)::int AS fees
   `);
   const needsRefund = await query(
@@ -38,7 +39,7 @@ export async function summary() {
       (SELECT max(received_at) FROM webhook_events) AS last_webhook`);
   return {
     counts: { ...c, left: Math.max(0, c.capacity - c.sold - c.held) },
-    money: { gross: c.gross, refunds: c.refunds, fees: c.fees, net: c.gross - c.refunds - c.fees },
+    money: { gross: c.gross, refunds: c.refunds, owed: c.refunds_owed, fees: c.fees, net: c.gross - c.fees, inBank: c.gross + c.refunds_owed },
     needsRefund,
     health: { ...h, db: true, lastWebhook: h.last_webhook ? new Date(h.last_webhook).toISOString() : null, fakePayments: fakePaymentsEnabled() },
   };

@@ -97,6 +97,7 @@ function receivedMail(to: string, orderId: string): Mail {
 async function rejectedMail(orderId: string, to: string): Promise<Mail> {
   const [o] = await query("SELECT status, review_note FROM orders WHERE id = $1", [orderId]);
   const again = o?.status === "pending";
+  if (o?.status === "needs_refund") return refundOwedMail(orderId, to, o.review_note);
   const link = `${appUrl()}/order/${orderId}`;
   const inner = `<p>We couldn't confirm your payment: <strong>${esc(o?.review_note ?? "the details didn't match")}</strong>.</p>
 ${again
@@ -111,6 +112,23 @@ function orderStatusMail(orderId: string, to: string): Mail {
   const inner = `<p>Your order isn't confirmed yet. Open it to pay, submit your UTR and screenshot, or check whether we've verified it. Your ticket is emailed once the payment is verified.</p>
 <p><a href="${link}" style="display:inline-block;background:#e3302f;color:#fff;text-decoration:none;padding:12px 18px;font-weight:700">Open your order</a></p>`;
   return { to, subject: `${eventConfig.name}: your order`, html: shell("Your order", inner), text: `Your order page: ${link}` };
+}
+
+async function refundOwedMail(orderId: string, to: string, note: string | null): Promise<Mail> {
+  const [o] = await query("SELECT amount_paise FROM orders WHERE id = $1", [orderId]);
+  const amt = `Rs ${((o?.amount_paise ?? 0) / 100).toLocaleString("en-IN")}`;
+  const inner = `<p>We're sorry, we couldn't offer you a ticket${note ? `: <strong>${esc(note)}</strong>` : ""}.</p>
+<p>Your payment of <strong>${amt}</strong> will be refunded in full to the account you paid from. We'll message you as soon as it has been sent.</p>
+<p>Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>`;
+  return { to, subject: `${eventConfig.name}: your refund`, html: shell("Your payment will be refunded", inner), text: `We couldn't offer you a ticket. Your payment of ${amt} will be refunded in full.` };
+}
+
+async function refundedMail(orderId: string, to: string): Promise<Mail> {
+  const [o] = await query("SELECT amount_paise FROM orders WHERE id = $1", [orderId]);
+  const amt = `Rs ${((o?.amount_paise ?? 0) / 100).toLocaleString("en-IN")}`;
+  const inner = `<p>Your refund of <strong>${amt}</strong> has been sent to the account you paid from. Banks can take a short while to show it.</p>
+<p>Questions? WhatsApp ${esc(eventConfig.organiser.whatsapp)} or email ${esc(eventConfig.organiser.email)}.</p>`;
+  return { to, subject: `${eventConfig.name}: refund sent`, html: shell("Refund sent", inner), text: `Your refund of ${amt} has been sent.` };
 }
 
 function refundMail(to: string): Mail {
@@ -131,6 +149,7 @@ export async function flushOutbox(orderId?: string): Promise<void> {
     try {
       const mail =
         r.kind === "needs_refund" ? refundMail(r.to_email)
+        : r.kind === "refunded" ? await refundedMail(r.order_id, r.to_email)
         : r.kind === "received" ? receivedMail(r.to_email, r.order_id)
         : r.kind === "rejected" ? await rejectedMail(r.order_id, r.to_email)
         : await ticketMail(r.order_id, r.to_email);

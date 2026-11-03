@@ -97,7 +97,8 @@ export async function approveOrder(orderId: string, staffId: string): Promise<Re
 }
 
 /** resubmit = back to pending so the buyer can fix a blurry screenshot or typo'd UTR; otherwise final. */
-export async function rejectOrder(orderId: string, staffId: string, reason: string, resubmit: boolean): Promise<ReviewResult> {
+/** refund = the money did arrive but the person is being turned down: the order goes to the refund list. */
+export async function rejectOrder(orderId: string, staffId: string, reason: string, resubmit: boolean, refund = false): Promise<ReviewResult> {
   const note = z.string().trim().min(3, "Give the buyer a short reason").max(300).parse(reason);
   return transaction(async (q): Promise<ReviewResult> => {
     const [o] = await q.query("SELECT * FROM orders WHERE id = $1 FOR UPDATE", [orderId]);
@@ -111,11 +112,11 @@ export async function rejectOrder(orderId: string, staffId: string, reason: stri
         [orderId, note, staffId],
       );
     } else {
-      await q.query("UPDATE orders SET status = 'rejected', review_note = $2, reviewed_by = $3, reviewed_at = now() WHERE id = $1", [orderId, note, staffId]);
+      await q.query("UPDATE orders SET status = $4, review_note = $2, reviewed_by = $3, reviewed_at = now() WHERE id = $1", [orderId, note, staffId, refund ? "needs_refund" : "rejected"]);
     }
     await q.query("INSERT INTO email_outbox (order_id, to_email, kind) VALUES ($1,$2,'rejected')", [orderId, o.buyer_email]);
-    await audit(q, resubmit ? "payment_resubmit_requested" : "payment_rejected", orderId, { staffId });
-    return { result: resubmit ? "resubmit" : "rejected" };
+    await audit(q, resubmit ? "payment_resubmit_requested" : refund ? "rejected_refund_owed" : "payment_rejected", orderId, { staffId });
+    return { result: resubmit ? "resubmit" : refund ? "needs_refund" : "rejected" };
   });
 }
 
@@ -157,14 +158,61 @@ export async function getProof(orderId: string) {
   return { url: r.proof_url as string | null, data: r.proof_data as Buffer | null, mime: (r.proof_mime as string) ?? "image/jpeg" };
 }
 
-/** Admin confirms they sent the money back (from their UPI app) for an order that sold out after payment. */
-export async function markRefunded(orderId: string, staffId: string): Promise<void> {
+/** A final rejection where the money had actually arrived: put it on the refund list. */
+export async function markRefundOwed(orderId: string, staffId: string): Promise<void> {
   await transaction(async (q) => {
     const [o] = await q.query("SELECT status FROM orders WHERE id = $1 FOR UPDATE", [orderId]);
+    if (!o) throw new AppError("NOT_FOUND", "Order not found.", 404);
+    if (o.status === "needs_refund") return; // idempotent
+    if (o.status !== "rejected") throw new AppError("NOT_REJECTED", "Only rejected orders can be moved to the refund list.", 409);
+    await q.query("UPDATE orders SET status = 'needs_refund', reviewed_by = $2, reviewed_at = now() WHERE id = $1", [orderId, staffId]);
+    await audit(q, "refund_marked_owed", orderId, { staffId });
+  });
+}
+
+export const refundInput = z.object({
+  method: z.enum(["upi", "whatsapp", "cash", "other"]),
+  reference: z.string().trim().max(80).optional(),
+  note: z.string().trim().max(300).optional(),
+});
+
+/** Admin confirms the money went back (UPI app, agreed in a WhatsApp chat, cash...). Recorded once per order. */
+export async function markRefunded(orderId: string, staffId: string, input: z.input<typeof refundInput> = { method: "upi" }): Promise<void> {
+  const d = refundInput.parse(input);
+  await transaction(async (q) => {
+    const [o] = await q.query("SELECT status, amount_paise FROM orders WHERE id = $1 FOR UPDATE", [orderId]);
     if (!o) throw new AppError("NOT_FOUND", "Order not found.", 404);
     if (o.status === "refunded") return; // idempotent
     if (o.status !== "needs_refund") throw new AppError("NOT_REFUNDABLE", "Only orders marked as needing a refund can be marked refunded.", 409);
     await q.query("UPDATE orders SET status = 'refunded', reviewed_by = $2, reviewed_at = now() WHERE id = $1", [orderId, staffId]);
-    await audit(q, "marked_refunded", orderId, { staffId });
+    await q.query(
+      "INSERT INTO refunds (order_id, amount_paise, method, reference, note, refunded_by) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (order_id) DO NOTHING",
+      [orderId, o.amount_paise, d.method, d.reference || null, d.note || null, staffId],
+    );
+    await q.query("INSERT INTO email_outbox (order_id, to_email, kind) SELECT id, buyer_email, 'refunded' FROM orders WHERE id = $1", [orderId]);
+    await audit(q, "marked_refunded", orderId, { staffId, method: d.method, amountPaise: o.amount_paise });
   });
+}
+
+export interface RefundRow {
+  orderId: string; name: string; phone: string; amountPaise: number; reason: string | null; at: string;
+  method?: string; reference?: string | null; note?: string | null; by?: string | null;
+}
+
+/** Everything about refunds in one place: who is owed, who has been paid back, and the totals. */
+export async function refundLedger() {
+  const owedRows = await query(
+    `SELECT id, buyer_name, buyer_phone, amount_paise, review_note, COALESCE(reviewed_at, created_at) AS at
+       FROM orders WHERE status = 'needs_refund' ORDER BY COALESCE(reviewed_at, created_at)`);
+  const doneRows = await query(
+    `SELECT r.order_id, r.amount_paise, r.method, r.reference, r.note, r.refunded_at, o.buyer_name, o.buyer_phone, o.review_note, s.name AS by
+       FROM refunds r JOIN orders o ON o.id = r.order_id LEFT JOIN staff_users s ON s.id = r.refunded_by
+      ORDER BY r.refunded_at DESC LIMIT 200`);
+  const owed: RefundRow[] = owedRows.map((r) => ({ orderId: r.id, name: r.buyer_name, phone: r.buyer_phone, amountPaise: r.amount_paise, reason: r.review_note, at: new Date(r.at).toISOString() }));
+  const done: RefundRow[] = doneRows.map((r) => ({
+    orderId: r.order_id, name: r.buyer_name, phone: r.buyer_phone, amountPaise: r.amount_paise, reason: r.review_note, at: new Date(r.refunded_at).toISOString(),
+    method: r.method, reference: r.reference, note: r.note, by: r.by,
+  }));
+  const sum = (x: RefundRow[]) => x.reduce((a, r) => a + r.amountPaise, 0);
+  return { owed, done, totals: { owedCount: owed.length, owedPaise: sum(owed), refundedCount: done.length, refundedPaise: sum(done) } };
 }

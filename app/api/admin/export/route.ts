@@ -4,7 +4,7 @@ import { requireRole, audit } from "@/lib/auth";
 import { toCsv, toXlsx, type ExportOpts } from "@/lib/admin/export";
 import { STATUS_FILTERS } from "@/lib/admin/contacts";
 
-const q = z.object({ kind: z.enum(["attendees", "checkins", "contacts"]), format: z.enum(["xlsx", "csv"]), status: z.enum(STATUS_FILTERS).default("all"), unique: z.enum(["0", "1"]).default("1") });
+const q = z.object({ kind: z.enum(["attendees", "checkins", "contacts", "refunds"]), format: z.enum(["xlsx", "csv"]), status: z.enum(STATUS_FILTERS).default("all"), unique: z.enum(["0", "1"]).default("1") });
 
 export async function GET(req: Request) {
   return handle(async () => {

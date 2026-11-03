@@ -191,6 +191,17 @@ export const sessions = pgTable("sessions", {
   createdAt: ts("created_at").notNull().defaultNow(),
 });
 
+export const refunds = pgTable("refunds", {
+  id: id(),
+  orderId: uuid("order_id").notNull().unique().references(() => orders.id),
+  amountPaise: integer("amount_paise").notNull(),
+  method: text("method").notNull(), // upi | whatsapp | cash | other
+  reference: text("reference"),
+  note: text("note"),
+  refundedBy: uuid("refunded_by"),
+  refundedAt: ts("refunded_at").notNull().defaultNow(),
+});
+
 export const auditLogs = pgTable(
   "audit_logs",
   {

@@ -1,14 +1,17 @@
 import { z } from "zod";
-import { fail, handle, ok } from "@/lib/api";
+import { body, fail, handle, ok } from "@/lib/api";
 import { requireRole } from "@/lib/auth";
-import { markRefunded } from "@/lib/payments/manual";
+import { markRefunded, refundInput } from "@/lib/payments/manual";
+import { flushOutbox } from "@/lib/email";
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   return handle(async () => {
     const staff = await requireRole("admin");
     const { id } = await params;
     if (!z.string().uuid().safeParse(id).success) return fail("NOT_FOUND", "Order not found.", 404);
-    await markRefunded(id, staff.id);
+    const d = await body(req, refundInput);
+    await markRefunded(id, staff.id, d);
+    await flushOutbox(id).catch(() => {});
     return ok({});
   });
 }

@@ -1,4 +1,5 @@
-import { getAbout } from "@/lib/site-content";
+import { getLanding } from "@/lib/site-content";
+import { Rich } from "@/components/Rich";
 import Image from "next/image";
 import Link from "next/link";
 import { eventConfig as e } from "@/config/event";
@@ -9,19 +10,6 @@ import { SiteFooter } from "@/components/SiteFooter";
 // Static: built at deploy, zero DB calls on render. Availability arrives via PassPicker.
 export const dynamic = "force-static";
 
-const faqs: [string, string][] = [
-  ["How do I buy a ticket?", "Pick a pass, enter your details, and pay the exact amount by UPI. Then enter the UTR (reference number) from your payment and upload a screenshot."],
-  ["When do I get my ticket?", "We check every payment against our bank account by hand, then email your ticket as a PDF. You'll also see it on your order page. Please allow some time; it is not instant."],
-  [
-    "I paid but haven't got my ticket.",
-    `Check your spam folder, then use “Find my ticket” in the footer. Still nothing? WhatsApp ${e.organiser.whatsapp} with your phone number and payment screenshot.`,
-  ],
-  ["I lost my ticket or the email.", "Use “Find my ticket” in the footer with the email or phone number you booked with, and we'll email your ticket links again. Or we look you up at the door with your name, phone number and ID."],
-  ["Who can come?", `${e.ageLimit}. Bring a valid government photo ID.`],
-  ["Is my ticket transferable?", `${e.policy.transferable}. Each QR works once. Whoever's code is scanned first gets in, so don't post it publicly.`],
-  ["What about refunds?", `${e.policy.refundPolicy}. ${e.policy.transferable}. ${e.policy.reentry}. See the Terms in the footer.`],
-];
-
 const photos = [
   { src: "/images/last-blue.webp", w: 900, h: 1200, alt: "Blue beams cutting through the dark in front of the Project Y2K screen", cls: "" },
   { src: "/images/last-smoke.webp", w: 900, h: 1200, alt: "Smoke and the Project Y2K logo on the big screen, in black and white", cls: "" },
@@ -29,7 +17,8 @@ const photos = [
 ];
 
 export default async function Home() {
-  const about = await getAbout();
+  const L = await getLanding();
+  const about = L.about;
   return (
     <main id="top" className="overflow-x-clip">
       <header className="sticky top-0 z-30 border-b border-line bg-bg">
@@ -103,27 +92,20 @@ export default async function Home() {
 
       <section aria-label="Why you can trust this" className="band border-t-0">
         <div className="wrap flex flex-wrap justify-between gap-x-12 gap-y-5 py-7 text-sm">
-          <p><span className="text-crimson">01</span>&nbsp; Every payment checked by a real person</p>
-          <p><span className="text-crimson">02</span>&nbsp; Exact price shown before you pay. No surprises</p>
-          <p><span className="text-crimson">03</span>&nbsp; Real people on WhatsApp: {e.organiser.whatsapp}</p>
+          {L.trust.map((t, i) => <p key={i}><span className="text-crimson">{String(i + 1).padStart(2, "0")}</span>&nbsp; {t}</p>)}
         </div>
       </section>
 
       {/* HOW IT WORKS */}
       <section id="how" aria-labelledby="how-h" className="wrap section reveal">
-        <p className="eyebrow">Simple</p>
-        <h2 id="how-h" className="h2 mt-4">How to get <em>your ticket.</em></h2>
+        <p className="eyebrow">{L.how.eyebrow}</p>
+        <h2 id="how-h" className="h2 mt-4"><Rich text={L.how.heading} as="em" /></h2>
         <ol className="mt-10 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["Pick a pass", "Choose your pass and enter your name, phone and email."],
-            ["Pay by UPI", "Scan the QR or tap “Open my UPI app”. Pay the exact amount shown."],
-            ["Send proof", "Enter the 12-digit UTR from your payment and upload a screenshot."],
-            ["Get your ticket", "We verify your payment, then email your PDF ticket. Show the QR at the door."],
-          ].map(([t, d], i) => (
-            <li key={t} className="border-t border-line pt-4">
+          {L.how.steps.map((st, i) => (
+            <li key={i} className="border-t border-line pt-4">
               <p className="font-display text-3xl text-crimson">{String(i + 1).padStart(2, "0")}</p>
-              <p className="mt-2 text-lg font-semibold">{t}</p>
-              <p className="muted mt-1 text-sm leading-relaxed">{d}</p>
+              <p className="mt-2 text-lg font-semibold">{st.title}</p>
+              <p className="muted mt-1 text-sm leading-relaxed">{st.text}</p>
             </li>
           ))}
         </ol>
@@ -131,11 +113,10 @@ export default async function Home() {
 
       {/* LAST TIME */}
       <section id="last" className="wrap section reveal">
-        <p className="eyebrow">The last one</p>
-        <h2 className="h2 mt-4">Y2K 1.0 — <em>The Index.</em></h2>
-        <p className="mt-4 text-lg font-medium">Where it all began.</p>
-        <p className="muted mt-3 max-w-[60ch] text-[17px] leading-relaxed">An unforgettable day at Illuzion, bringing together music, connections and the Y2K experience. With DJs playing throughout, spontaneous matchmaking and a photo booth capturing the moments, this was more than just another party.</p>
-        <p className="mt-3 max-w-[60ch] text-[17px] leading-relaxed">The beginning of something bigger. <span className="text-crimson">And we’re only getting started.</span></p>
+        <p className="eyebrow">{L.last.eyebrow}</p>
+        <h2 className="h2 mt-4"><Rich text={L.last.heading} as="em" /></h2>
+        {L.last.lead && <p className="mt-4 text-lg font-medium">{L.last.lead}</p>}
+        {L.last.paras.map((t, i) => <p key={i} className={`mt-3 max-w-[60ch] whitespace-pre-line text-[17px] leading-relaxed ${i === 0 ? "muted" : ""}`}><Rich text={t} /></p>)}
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {photos.map((p) => (
             <div key={p.src} className={`min-w-0 ${p.cls}`}>
@@ -148,17 +129,10 @@ export default async function Home() {
       {/* DETAILS */}
       <section aria-label="Event details" className="band">
         <div className="wrap flex flex-wrap gap-x-12 gap-y-7 py-10">
-          {[
-            ["Date", e.dateLabel, "flex-[1_1_160px]"],
-            ["Doors", e.doorsOpen, "flex-[1_1_160px]"],
-            ["Music", `${e.musicFrom} to ${e.musicUntil}`, "flex-[1_1_160px]"],
-            ["Venue", `${e.venue.name}, ${e.venue.address}`, "flex-[2_1_240px]"],
-            ["Age", e.ageLimit, "flex-[1_1_160px]"],
-            ["Dress", e.dressCode, "flex-[1_1_160px]"],
-          ].map(([k, v, c]) => (
-            <div key={k} className={c}>
-              <p className="label">{k}</p>
-              <p className="mt-2 font-serif text-[28px] leading-[1.1]">{v}</p>
+          {L.details.map((d, i) => (
+            <div key={i} className={d.label.toLowerCase() === "venue" ? "flex-[2_1_240px]" : "flex-[1_1_160px]"}>
+              <p className="label">{d.label}</p>
+              <p className="mt-2 font-serif text-[28px] leading-[1.1]">{d.value}</p>
             </div>
           ))}
           {e.venue.mapUrl && (
@@ -169,26 +143,21 @@ export default async function Home() {
 
       {/* PASSES */}
       <section id="passes" className="wrap section scroll-mt-4">
-        <p className="eyebrow">Passes</p>
-        <h2 className="h2 mt-4">Pick your <em>pass.</em></h2>
-        <p className="muted mt-4 max-w-[56ch]">The price you see is the price you pay. Your ticket is emailed once we've verified your payment.</p>
+        <p className="eyebrow">{L.passes.eyebrow}</p>
+        <h2 className="h2 mt-4"><Rich text={L.passes.heading} as="em" /></h2>
+        <p className="muted mt-4 max-w-[56ch]">{L.passes.intro}</p>
         <PassPicker />
         <ol className="muted mt-10 flex flex-wrap gap-x-10 gap-y-4 text-sm">
-          <li><span className="text-crimson">1</span>&nbsp; Pay the exact amount by UPI</li>
-          <li><span className="text-crimson">2</span>&nbsp; Enter the UTR and upload your screenshot</li>
-          <li><span className="text-crimson">3</span>&nbsp; We verify it, then email your PDF ticket</li>
+          {L.passes.steps.map((t, i) => <li key={i}><span className="text-crimson">{i + 1}</span>&nbsp; {t}</li>)}
         </ol>
       </section>
 
       {/* ABOUT */}
       <section className="band border-b-0">
         <div className="wrap section reveal">
-          <p className="eyebrow">About</p>
-          <h2 className="h2 mt-4">Who&apos;s <em>behind it.</em></h2>
-          <p className="muted mt-6 max-w-[56ch]">
-            Project Y2K is a party series. Y2K 1.0, The Index, was held at Illuzion. This year it&apos;s The Matrix: Hyderabad&apos;s first theatre rave, at {e.venue.name}.
-          </p>
-          <p className="muted mt-4 max-w-[56ch]">{e.organiser.name} · WhatsApp {e.organiser.whatsapp} · {e.organiser.instagram}</p>
+          <p className="eyebrow">{L.who.eyebrow}</p>
+          <h2 className="h2 mt-4"><Rich text={L.who.heading} as="em" /></h2>
+          {L.who.paras.map((t, i) => <p key={i} className={`muted max-w-[56ch] whitespace-pre-line ${i === 0 ? "mt-6" : "mt-4"}`}><Rich text={t} /></p>)}
         </div>
       </section>
 
@@ -197,12 +166,12 @@ export default async function Home() {
         <p className="eyebrow">FAQ</p>
         <h2 className="h2 mt-4">Before you <em>ask.</em></h2>
         <div className="mt-10 border-t border-line">
-          {faqs.map(([q, a]) => (
-            <details key={q} className="border-b border-line">
+          {L.faq.map(({ q, a }, i) => (
+            <details key={i} className="border-b border-line">
               <summary className="flex min-h-14 items-center justify-between gap-4 py-5 text-lg">
                 {q}<span aria-hidden="true" className="plus text-xl text-crimson">+</span>
               </summary>
-              <p className="muted mb-5 max-w-[60ch]">{a}</p>
+              <p className="muted mb-5 max-w-[60ch] whitespace-pre-line">{a}</p>
             </details>
           ))}
         </div>

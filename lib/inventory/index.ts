@@ -5,6 +5,7 @@
 import { eventConfig } from "@/config/event";
 import { AppError, isUniqueViolation } from "@/lib/errors";
 import { query, transaction, type Q } from "@/lib/db";
+import { getSales } from "@/lib/sales";
 
 const AVAILABLE_SQL = `
   SELECT p.total_qty
@@ -33,6 +34,7 @@ export interface PublicPass {
 }
 
 export async function listPublicPasses(): Promise<PublicPass[]> {
+  const { paused } = await getSales();
   const rows = await query(
     `SELECT p.id, p.name, p.description, p.price_paise, p.fee_paise, p.admits, p.active,
             (p.sales_start IS NULL OR p.sales_start <= now()) AND (p.sales_end IS NULL OR p.sales_end >= now()) AS in_window,
@@ -51,7 +53,7 @@ export async function listPublicPasses(): Promise<PublicPass[]> {
     feePaise: r.fee_paise,
     admits: r.admits,
     available: Math.max(0, Number(r.available)),
-    onSale: r.in_window,
+    onSale: r.in_window && !paused,
   }));
 }
 
@@ -84,6 +86,7 @@ export async function reserveOrder(input: ReserveInput): Promise<ReservedOrder> 
 
   const existing = await query("SELECT * FROM orders WHERE idempotency_key = $1", [input.idempotencyKey]);
   if (existing.length) return toReserved(existing[0] as never, false);
+  if ((await getSales()).paused) throw new AppError("SALES_PAUSED", "Ticket sales are paused for a short while. Please check back soon, or WhatsApp us.", 503);
 
   // merge duplicate lines
   const merged = new Map<string, number>();

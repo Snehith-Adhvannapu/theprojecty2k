@@ -93,6 +93,7 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
                 </span>
                 <span className="flex flex-wrap items-center gap-x-4 gap-y-0">
                   <span className={r.status === "paid" ? "" : "text-crimson"}>{r.status === "paid" ? "Approved" : r.status === "needs_refund" ? "Refund owed" : "Rejected"}</span>
+                  {r.hasProof && <a className="inline-flex min-h-11 items-center border-b border-blood" href={`/api/admin/orders/${r.id}/proof`} target="_blank" rel="noreferrer">Screenshot</a>}
                   {r.ticketToken && <a className="inline-flex min-h-11 items-center border-b border-blood" href={wa(r.buyerPhone, r.buyerName, r.ticketToken)} target="_blank" rel="noreferrer">Send on WhatsApp</a>}
                   {r.canReverse && <Reverse r={r} done={load} />}
                   {r.canReverse && <Owe r={r} done={load} />}

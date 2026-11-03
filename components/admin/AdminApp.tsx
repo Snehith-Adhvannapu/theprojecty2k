@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { Tip } from "@/components/Tip";
 import { paise } from "@/lib/normalize";
@@ -139,6 +139,8 @@ function Guests() {
   const [q, setQ] = useState("");
   const { data, err, reload } = useLoad<Guest[]>("/api/admin/guests");
   const [msg, setMsg] = useState("");
+  const [editing, setEditing] = useState("");
+  const [undoing, setUndoing] = useState("");
   useEffect(() => { const t = setTimeout(() => reload(`/api/admin/guests?q=${encodeURIComponent(q)}`), 250); return () => clearTimeout(t); }, [q, reload]);
 
   async function act(fn: () => Promise<unknown>, ok: string) {
@@ -147,6 +149,13 @@ function Guests() {
   }
   const actions = (g: Guest) => (
     <>
+      <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => setEditing(editing === g.id ? "" : g.id)} aria-expanded={editing === g.id}>Edit details</button>
+      {g.status === "used" && (undoing === g.id
+        ? <>
+            <button className="btn btn-primary btn-calm min-h-11 px-3 text-sm" onClick={() => { setUndoing(""); act(() => api(`/api/admin/tickets/${g.id}/undo-checkin`, {}), `${g.name} is marked as not checked in. The ticket can be scanned again.`); }}>Yes, undo check-in</button>
+            <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => setUndoing("")}>Cancel</button>
+          </>
+        : <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => setUndoing(g.id)}>Undo check-in</button>)}
       {g.orderId && <button className="btn btn-quiet btn-calm min-h-11 px-3 text-sm" onClick={() => act(() => api(`/api/admin/orders/${g.orderId}/resend`, {}), "Email queued and sent")}>Resend email</button>}
     </>
   );
@@ -173,6 +182,7 @@ function Guests() {
             <p className="muted tnum mt-1 text-[13px]">{g.shortCode} · {g.passName} ×{g.admits}</p>
             <p className="tnum mt-1 text-sm">{g.phone}{g.instagram ? <span className="muted"> · @{g.instagram}</span> : null}</p>
             <div className="mt-3 flex flex-wrap gap-2">{actions(g)}</div>
+            {editing === g.id && <GuestEdit g={g} cancel={() => setEditing("")} done={(m) => { setEditing(""); setMsg(m); reload(`/api/admin/guests?q=${encodeURIComponent(q)}`); }} />}
           </li>
         ))}
         {data?.length === 0 && <li className="muted py-4 text-sm">No guests match.</li>}
@@ -183,7 +193,8 @@ function Guests() {
           <thead><tr className="bg-card text-left text-muted">{["Name", "Code", "Pass", "Phone", "Instagram", "Status", "Actions"].map((h) => <th key={h} scope="col" className="px-4 py-3 font-medium">{h === "Code" ? <span className="inline-flex items-center gap-1.5">{h}<Tip text="The short code under the ticket's QR. If a QR won't scan, the volunteer can find the guest with this." /></span> : h === "Actions" ? <span className="inline-flex items-center gap-1.5">{h}<Tip text="Resend email sends the ticket link to the buyer again. Use it if they say they never got it." /></span> : h}</th>)}</tr></thead>
           <tbody>
             {data?.map((g) => (
-              <tr key={g.id} className="border-t border-line align-top">
+              <Fragment key={g.id}>
+              <tr className="border-t border-line align-top">
                 <td className="px-4 py-3">{g.name}{g.source === "comp" && <span className="muted"> · comp</span>}</td>
                 <td className="px-4 py-3 tnum">{g.shortCode}</td>
                 <td className="px-4 py-3">{g.passName} <span className="muted">×{g.admits}</span></td>
@@ -192,6 +203,8 @@ function Guests() {
                 <td className={`px-4 py-3 ${g.status === "revoked" ? "text-crimson" : ""}`}>{status(g)}</td>
                 <td className="flex flex-wrap gap-2 px-4 py-2">{actions(g)}</td>
               </tr>
+              {editing === g.id && <tr><td colSpan={7} className="px-4 pb-4"><GuestEdit g={g} cancel={() => setEditing("")} done={(m) => { setEditing(""); setMsg(m); reload(`/api/admin/guests?q=${encodeURIComponent(q)}`); }} /></td></tr>}
+              </Fragment>
             ))}
             {data?.length === 0 && <tr><td colSpan={7} className="muted px-4 py-6">No guests match.</td></tr>}
           </tbody>
@@ -201,7 +214,65 @@ function Guests() {
   );
 }
 
+function GuestEdit({ g, done, cancel }: { g: Guest; done: (m: string) => void; cancel: () => void }) {
+  const [f, setF] = useState({ name: g.name, phone: g.phone, email: g.email ?? "", instagram: g.instagram ?? "" });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
+  async function save(e: React.FormEvent) {
+    e.preventDefault(); setBusy(true); setErr("");
+    try {
+      await api(`/api/admin/tickets/${g.id}/edit`, { name: f.name, phone: f.phone, email: f.email || null, instagram: f.instagram || undefined });
+      done(`Saved ${f.name}. If you changed the email, press Resend email so the ticket goes to the new address.`);
+    } catch (er) { setErr(er instanceof Error ? er.message : "Failed"); setBusy(false); }
+  }
+  const id = (k: string) => `ge-${g.id}-${k}`;
+  return (
+    <form onSubmit={save} className="mt-3 flex flex-col gap-3 rounded-sm border border-line-strong p-4">
+      <p className="flex items-center gap-1.5 text-sm font-medium">Edit details<Tip text="Fix a spelling mistake or a wrong number. The name here is what the volunteer sees at the door, so keep it the same as the guest's photo ID. The change is recorded in Activity." /></p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex flex-col gap-1"><label className="label" htmlFor={id("n")}>Name on ticket</label><input id={id("n")} className="field" value={f.name} onChange={set("name")} autoComplete="off" /></div>
+        <div className="flex flex-col gap-1"><label className="label" htmlFor={id("p")}>Mobile</label><input id={id("p")} className="field tnum" inputMode="tel" value={f.phone} onChange={set("phone")} autoComplete="off" /></div>
+        <div className="flex flex-col gap-1"><label className="label" htmlFor={id("e")}>Email</label><input id={id("e")} className="field" type="email" value={f.email} onChange={set("email")} autoComplete="off" /></div>
+        <div className="flex flex-col gap-1"><label className="label" htmlFor={id("i")}>Instagram</label><input id={id("i")} className="field" value={f.instagram} onChange={set("instagram")} autoComplete="off" autoCapitalize="none" /></div>
+      </div>
+      {err && <p role="alert" className="rounded-sm border border-danger p-3 text-sm">{err}</p>}
+      <div className="flex flex-wrap gap-3">
+        <button className="btn btn-primary btn-calm min-h-12 px-6" disabled={busy || f.name.trim().length < 2} aria-busy={busy}>{busy && <span className="spinner" aria-hidden="true" />}{busy ? "Saving…" : "Save changes"}</button>
+        <button type="button" className="btn btn-quiet btn-calm min-h-12 px-5" onClick={cancel} disabled={busy}>Cancel</button>
+      </div>
+    </form>
+  );
+}
+
 const rupees = (p: number) => String(p / 100);
+const toIst = (iso: string | null) => (iso ? new Date(iso).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).slice(0, 16).replace(" ", "T") : "");
+const fromIst = (v: string) => (v ? new Date(`${v}:00+05:30`).toISOString() : null);
+
+/** Emergency stop for the whole shop. Orders already placed and tickets already issued are not affected. */
+function SalesSwitch() {
+  const [paused, setPaused] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  useEffect(() => { api<{ paused: boolean }>("/api/admin/sales").then((s) => setPaused(s.paused)).catch((e) => setMsg(e instanceof Error ? e.message : "Failed")); }, []);
+  async function toggle() {
+    if (paused === null) return;
+    if (!paused && !window.confirm("Pause ALL ticket sales? Nobody will be able to start a new order until you resume. Orders already placed are not affected.")) return;
+    setBusy(true); setMsg("");
+    try { setPaused((await api<{ paused: boolean }>("/api/admin/sales", { paused: !paused })).paused); } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); }
+    setBusy(false);
+  }
+  return (
+    <div className={`card-plain flex flex-wrap items-center justify-between gap-3 p-4 ${paused ? "!border-crimson" : ""}`}>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-1.5 text-base font-semibold">{paused ? "Ticket sales are PAUSED" : "Ticket sales are on"}<Tip text="A master switch for the whole shop. Pause it if you spot a wrong price, the venue changes, or something is wrong with payments. While paused, nobody can start a new order; people who already ordered can still pay and get their tickets." /></p>
+        <p className="muted text-sm">{paused ? "Visitors see the passes as not on sale." : "Visitors can buy passes that are on sale."}</p>
+        {msg && <p role="alert" className="mt-1 text-sm text-danger">{msg}</p>}
+      </div>
+      <button className={`btn btn-calm min-h-12 px-6 ${paused ? "btn-primary" : "btn-quiet"}`} onClick={toggle} disabled={busy || paused === null} aria-busy={busy}>{busy && <span className="spinner" aria-hidden="true" />}{paused ? "Resume sales" : "Pause all sales"}</button>
+    </div>
+  );
+}
 const toPaise = (s: string) => Math.round(parseFloat(s || "0") * 100);
 
 function Passes() {
@@ -212,6 +283,7 @@ function Passes() {
       <h2 className="flex items-center gap-1.5 text-lg">Passes<Tip text="Each row is one kind of ticket. Change the numbers and press Save. Buyers see the new price and availability within a few seconds." /></h2>
       <p className="muted mt-1 text-sm">Pick one admission (admits 1) or a couple pass (admits 2: one QR, one scan). Prices in rupees.</p>
       <Err m={err} />{msg && <p role="status" className="mt-3 text-sm">{msg}</p>}
+      <div className="mt-4"><SalesSwitch /></div>
       <div className="mt-4 flex flex-col gap-3">
         {data?.map((p) => <PassRow key={p.id} p={p} onSaved={(m) => { setMsg(m); reload(); }} />)}
         <PassRow p={{ id: "", name: "", description: "", pricePaise: 0, feePaise: 0, totalQty: 0, admits: 1, active: false, sort: (data?.length ?? 0), sold: 0, salesStart: null, salesEnd: null }} fresh onSaved={(m) => { setMsg(m); reload(); }} />
@@ -221,7 +293,7 @@ function Passes() {
 }
 
 function PassRow({ p, fresh, onSaved }: { p: Pass; fresh?: boolean; onSaved: (m: string) => void }) {
-  const [f, setF] = useState({ name: p.name, description: p.description, price: rupees(p.pricePaise), fee: rupees(p.feePaise), total: String(p.totalQty), admits: String(p.admits), active: p.active });
+  const [f, setF] = useState({ name: p.name, description: p.description, price: rupees(p.pricePaise), fee: rupees(p.feePaise), total: String(p.totalQty), admits: String(p.admits), active: p.active, start: toIst(p.salesStart), end: toIst(p.salesEnd) });
   const [state, setState] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [m, setM] = useState("");
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
@@ -230,10 +302,10 @@ function PassRow({ p, fresh, onSaved }: { p: Pass; fresh?: boolean; onSaved: (m:
     try {
       await api("/api/admin/passes", {
         id: p.id || undefined, name: f.name, description: f.description, pricePaise: toPaise(f.price), feePaise: toPaise(f.fee),
-        totalQty: parseInt(f.total || "0", 10), admits: parseInt(f.admits || "1", 10), active: f.active, sort: p.sort, salesStart: p.salesStart, salesEnd: p.salesEnd,
+        totalQty: parseInt(f.total || "0", 10), admits: parseInt(f.admits || "1", 10), active: f.active, sort: p.sort, salesStart: fromIst(f.start), salesEnd: fromIst(f.end),
       });
       setState("ok"); onSaved(fresh ? "Pass added" : "Pass saved");
-      if (fresh) setF({ name: "", description: "", price: "0", fee: "0", total: "0", admits: "1", active: false });
+      if (fresh) setF({ name: "", description: "", price: "0", fee: "0", total: "0", admits: "1", active: false, start: "", end: "" });
       setTimeout(() => setState("idle"), 1500);
     } catch (e) { setState("error"); setM(e instanceof Error ? e.message : "Failed"); }
   }
@@ -251,6 +323,8 @@ function PassRow({ p, fresh, onSaved }: { p: Pass; fresh?: boolean; onSaved: (m:
         {!fresh && <span className="muted text-sm tnum">{p.sold} sold · {p.held ?? 0} held · {Math.max(0, (parseInt(f.total || "0", 10) || 0) - p.sold - (p.held ?? 0))} left. Save to apply.</span>}
       </div>
       <div className={`${cell} min-w-[90px] flex-1`}><label className="label flex items-center gap-1.5">Admits<Tip text="How many people one ticket lets in. 1 = a single pass. 2 = a couple pass: one QR code that is scanned once for both people." /></label><input className="field" inputMode="numeric" value={f.admits} onChange={set("admits")} /></div>
+      <div className={`${cell} min-w-[200px] flex-1`}><label className="label flex items-center gap-1.5" htmlFor={`ss-${p.id || "new"}`}>Sales open (IST)<Tip text="Optional. The pass can only be bought from this date and time. Leave empty to start straight away." /></label><input id={`ss-${p.id || "new"}`} type="datetime-local" className="field" value={f.start} onChange={set("start")} /></div>
+      <div className={`${cell} min-w-[200px] flex-1`}><label className="label flex items-center gap-1.5" htmlFor={`se-${p.id || "new"}`}>Sales close (IST)<Tip text="Optional. After this date and time the pass can no longer be bought, for example when an Early Bird offer ends. Leave empty for no end." /></label><input id={`se-${p.id || "new"}`} type="datetime-local" className="field" value={f.end} onChange={set("end")} /></div>
       <div className={`${cell} basis-full`}><label className="label">Description</label><input className="field" value={f.description} onChange={set("description")} /></div>
       <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--blood)]" checked={f.active} onChange={set("active")} /> On sale <Tip text="Tick to show this pass on the website and let people buy it. Untick to hide it. Tickets already sold stay valid." /></label>
             <button className="btn btn-primary btn-calm ml-auto min-h-11 px-5 text-sm" onClick={save} disabled={state === "loading" || !f.name}>
@@ -367,6 +441,7 @@ function Tools() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState("");
   const passes = useLoad<Pass[]>("/api/admin/passes");
+  const health = useLoad<Summary>("/api/admin/summary");
   const [c, setC] = useState({ passTypeId: "", name: "", phone: "", email: "", instagram: "", reason: "" });
   const [comp, setComp] = useState<{ shortCode: string; token: string } | null>(null);
 
@@ -376,9 +451,21 @@ function Tools() {
     catch (er) { setMsg(er instanceof Error ? er.message : "Failed"); }
     setBusy("");
   }
+  async function retryEmails() {
+    setBusy("mail"); setMsg("");
+    try { const r = await api<{ retried: number }>("/api/admin/emails", {}); setMsg(r.retried ? `${r.retried} email${r.retried === 1 ? "" : "s"} sent again.` : "No failed emails to send."); health.reload(); }
+    catch (er) { setMsg(er instanceof Error ? er.message : "Failed"); }
+    setBusy("");
+  }
   const dl = "btn btn-quiet btn-calm min-h-12 px-4 text-sm";
+  const hm = health.data?.health;
   return (
     <section className="flex flex-wrap gap-6">
+      <div className="card-plain basis-full p-5">
+        <h2 className="flex items-center gap-1.5 text-lg">Emails<Tip text="Tickets and updates are emailed automatically. If an email could not be delivered after several tries it is marked failed. Press Send failed emails again to try once more. Check the buyer's email address first (Guests, Edit details)." /></h2>
+        <p className="muted mt-1 text-sm tnum">{hm ? `${hm.pending_emails} waiting to send · ${hm.failed_emails} failed` : "Loading…"}</p>
+        <button className="btn btn-quiet btn-calm mt-3 min-h-12 px-5 text-sm" onClick={retryEmails} disabled={busy === "mail" || !hm?.failed_emails} aria-busy={busy === "mail"}>{busy === "mail" && <span className="spinner" aria-hidden="true" />}Send failed emails again</button>
+      </div>
       <div className="card-plain min-w-[320px] flex-1 p-5">
         <h2 className="flex items-center gap-1.5 text-lg">Export &amp; print<Tip text="Excel (.xlsx) opens in Excel or Google Sheets. CSV is a plain file that opens anywhere. Print guest list makes a paper copy for the door in case phones fail." /></h2>
         <div className="mt-4 flex flex-wrap gap-3">

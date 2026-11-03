@@ -1,4 +1,5 @@
 import { AppError } from "@/lib/errors";
+import { normalizeEmail } from "@/lib/normalize";
 import { query, transaction } from "@/lib/db";
 import { audit, hashPassword } from "@/lib/auth";
 import { issueTicket, tokenForTicket } from "@/lib/tickets";
@@ -235,4 +236,34 @@ export async function resendTicketEmail(actorId: string, orderId: string) {
   if (!o || o.status !== "paid") throw new AppError("NOT_PAID", "That order is not paid.", 409);
   await query("INSERT INTO email_outbox (order_id, to_email, kind) VALUES ($1,$2,'ticket')", [orderId, o.buyer_email]);
   await audit(actorId, "email_resent", orderId);
+}
+
+/** Fix a typo on a ticket: the name shown at the door, contact details, and (for bought tickets) where the ticket email goes. */
+export async function updateGuest(
+  actorId: string, ticketId: string,
+  v: { name: string; phone: string; email: string | null; instagram: string | null },
+) {
+  const [t] = await query("SELECT id, order_id FROM tickets WHERE id = $1", [ticketId]);
+  if (!t) throw new AppError("NOT_FOUND", "Ticket not found.", 404);
+  const email = v.email ? normalizeEmail(v.email) : null;
+  await transaction(async (q) => {
+    await q.query("UPDATE tickets SET holder_name = $2, holder_phone = $3, holder_email = $4, holder_instagram = $5 WHERE id = $1", [ticketId, v.name, v.phone, email, v.instagram]);
+    // The buyer's email decides where the ticket is sent, so keep the order in step with it.
+    if (t.order_id && email) await q.query("UPDATE orders SET buyer_email = $2 WHERE id = $1", [t.order_id, email]);
+  });
+  await audit(actorId, "guest_edited", ticketId, { fields: "name, phone, email, instagram" }); // never the values: they include phone and email
+}
+
+/** Undo a mistaken scan so the ticket can be scanned again. Only a used ticket; the scan history stays as it is. */
+export async function undoCheckin(actorId: string, ticketId: string) {
+  const r = await query("UPDATE tickets SET status = 'valid', used_at = NULL, used_by = NULL WHERE id = $1 AND status = 'used' RETURNING id", [ticketId]);
+  if (!r.length) throw new AppError("NOT_USED", "That ticket isn't checked in.", 409);
+  await audit(actorId, "checkin_undone", ticketId);
+}
+
+/** Emails that gave up after several failed tries go back in the queue and are sent now. */
+export async function retryFailedEmails(actorId: string) {
+  const r = await query("UPDATE email_outbox SET status = 'pending', attempts = 0, last_error = NULL WHERE status = 'failed' RETURNING id");
+  await audit(actorId, "emails_retried", null, { count: r.length });
+  return r.length;
 }

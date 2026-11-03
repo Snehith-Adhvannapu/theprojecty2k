@@ -1,0 +1,14 @@
+# Applied at cutover (not before: Caddy would keep failing to get certificates for names that don't point here yet).
+{
+	email snehithadvan@gmail.com
+}
+
+www.projecty2k.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}
+
+# One address for search engines and links: the bare domain and the test host both go to www.
+projecty2k.com, aws.projecty2k.com {
+	redir https://www.projecty2k.com{uri} permanent
+}

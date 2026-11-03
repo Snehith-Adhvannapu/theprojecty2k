@@ -219,3 +219,17 @@ details[open] > p { animation: fade-in 0.4s var(--ease-out); }
 /* Smoothness: no tap flash on phones, softer link and card transitions, no layout jump when the scrollbar appears. */
 html { -webkit-tap-highlight-color: transparent; text-rendering: optimizeLegibility; scrollbar-gutter: stable; }
 a, .card, .card-plain { transition: color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out); }
+
+/* Info tips: a small "i" that lifts and tints on hover or open; the note rises in with a crimson edge that draws across. */
+@keyframes tip-in { from { opacity: 0; transform: translateY(var(--tip-from, -6px)) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes tip-edge { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.tip-btn .tip-i { transition: color 0.2s, border-color 0.2s, background-color 0.2s, transform 0.3s var(--ease-out); }
+.tip-btn:hover .tip-i, .tip-btn[aria-expanded="true"] .tip-i { border-color: var(--crimson); color: var(--crimson); background-color: var(--burgundy); transform: translateY(-1px) scale(1.12); }
+.tip-pop { position: absolute; transform-origin: top left; animation: tip-in 0.24s var(--ease-out) both; }
+.tip-pop::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--blood); transform-origin: left; animation: tip-edge 0.45s var(--ease-out) 0.05s both; }
+.tip-pop.tip-up { transform-origin: bottom left; }
+@media (prefers-reduced-motion: reduce) {
+  .tip-pop, .tip-pop::before { animation: none; }
+  .tip-btn .tip-i { transition: none; }
+  .tip-btn:hover .tip-i, .tip-btn[aria-expanded="true"] .tip-i { transform: none; }
+}

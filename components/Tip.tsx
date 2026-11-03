@@ -1,14 +1,16 @@
 "use client";
-// A small "?" that explains something in plain words. Works with a mouse (hover), a keyboard (focus) and a phone (tap).
-// Closes on Escape, on tapping elsewhere, and when focus leaves. The popover stays inside the screen edges.
+// A small "i" that explains something in plain words. Works with a mouse (hover), a keyboard (focus) and a phone (tap).
+// Closes on Escape, on tapping elsewhere, and when focus leaves. The note stays inside the screen and flips above
+// the "i" when there is no room below. Motion lives in globals.css (.tip-*) and respects reduced motion.
 import { useEffect, useId, useRef, useState } from "react";
 
-export function Tip({ text, label = "What is this?", className = "" }: { text: string; label?: string; className?: string }) {
+export function Tip({ text, label = "More info", className = "" }: { text: string; label?: string; className?: string }) {
   const id = useId();
   const root = useRef<HTMLSpanElement>(null);
   const pop = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [shift, setShift] = useState(0);
+  const [up, setUp] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -19,14 +21,16 @@ export function Tip({ text, label = "What is this?", className = "" }: { text: s
     return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", esc); };
   }, [open]);
 
-  // Keep the popover 8px inside the viewport on narrow screens.
+  // Keep the note 8px inside the viewport; flip above the "i" when it would run off the bottom.
   useEffect(() => {
-    if (!open || !pop.current) return;
+    if (!open || !pop.current || !root.current) return;
     const r = pop.current.getBoundingClientRect();
     const w = document.documentElement.clientWidth;
     const base = r.left - shift;
     setShift(base < 8 ? 8 - base : base + r.width > w - 8 ? w - 8 - (base + r.width) : 0);
-  }, [open, shift]);
+    const anchor = root.current.getBoundingClientRect();
+    setUp(!up && r.bottom > window.innerHeight - 8 && anchor.top > r.height + 16 ? true : up);
+  }, [open, shift, up]);
 
   return (
     <span ref={root} className={`relative inline-flex align-middle ${className}`}
@@ -35,12 +39,12 @@ export function Tip({ text, label = "What is this?", className = "" }: { text: s
       onBlur={(ev) => { if (!root.current?.contains(ev.relatedTarget as Node)) setOpen(false); }}>
       <button type="button" aria-label={label} aria-expanded={open} aria-describedby={open ? id : undefined}
         onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); setOpen((o) => !o); }}
-        className="-m-3 inline-flex size-11 items-center justify-center">
-        <span aria-hidden="true" className="muted inline-flex size-5 items-center justify-center rounded-full border border-line-strong text-[12px] font-semibold leading-none">?</span>
+        className="tip-btn -m-3 inline-flex size-11 items-center justify-center">
+        <span aria-hidden="true" className="tip-i muted inline-flex size-5 items-center justify-center rounded-full border border-line-strong font-serif text-[13px] font-semibold italic leading-none">i</span>
       </button>
       {open && (
-        <span ref={pop} id={id} role="tooltip" style={{ transform: `translateX(${shift}px)` }}
-          className="absolute left-0 top-full z-40 mt-2 block w-[min(18rem,calc(100vw-2rem))] rounded-sm border border-line-strong bg-bg p-3 text-left text-[13px] font-normal normal-case leading-snug tracking-normal text-fg">
+        <span ref={pop} id={id} role="tooltip" style={{ left: shift, ...(up ? { ["--tip-from" as string]: "6px" } : {}) }}
+          className={`tip-pop z-40 block w-[min(18rem,calc(100vw-2rem))] rounded-sm border border-line-strong bg-bg p-3 pt-3.5 text-left text-[13px] font-normal normal-case leading-snug tracking-normal text-fg ${up ? "tip-up bottom-full mb-2" : "top-full mt-2"}`}>
           {text}
         </span>
       )}

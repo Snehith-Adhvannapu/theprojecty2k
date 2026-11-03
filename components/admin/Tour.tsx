@@ -121,7 +121,7 @@ export function Tour({ steps, start, tab, setTab, onClose }: {
         className="tour-card fixed z-[62] rounded-sm border border-line-strong bg-bg p-5 text-fg outline-none" style={{ top, left, width: W }}>
         <div className="flex items-center justify-between gap-3 text-[13px]">
           <span className="label">Step {i + 1} of {steps.length}</span>
-          <button className="muted inline-flex min-h-11 items-center hover:text-fg" onClick={() => onClose(false)}>Exit tour</button>
+          <button className="inline-flex min-h-11 items-center rounded-sm border border-line-strong px-3 font-semibold hover:bg-[var(--selected)]" onClick={() => onClose(false)}>Skip tour</button>
         </div>
         <div className="mt-1 h-1 rounded-sm bg-line" aria-hidden="true"><div className="tour-bar h-full rounded-sm bg-crimson" style={{ width: `${((i + 1) / steps.length) * 100}%` }} /></div>
         <h2 className="mt-3 text-lg leading-snug">{s.title}</h2>

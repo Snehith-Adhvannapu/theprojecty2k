@@ -46,6 +46,17 @@ export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: stri
   const [tab, setTab] = useState<Tab>(initialTab ?? "Overview");
   const [tour, setTour] = useState<number | null>(null);
   const steps = tourSteps(!!isSuper);
+  // Red numbers on the tabs that are waiting for a person: payments to review, refunds to send. Refreshed every 20s and on each tab change.
+  const [badge, setBadge] = useState<Partial<Record<Tab, number>>>({});
+  useEffect(() => {
+    let live = true;
+    const pull = async () => {
+      try { const s = await api<Summary>("/api/admin/summary"); if (live) setBadge({ Payments: s.health.awaiting_review, Refunds: s.needsRefund.length }); } catch { /* keep the last numbers */ }
+    };
+    pull();
+    const t = setInterval(pull, 20_000);
+    return () => { live = false; clearInterval(t); };
+  }, [tab]);
   const startTour = (id?: string) => { const at = id ? steps.findIndex((s) => s.id === id) : 0; setTour(at < 0 ? 0 : at); };
   const endTour = (finished: boolean) => { setTour(null); try { localStorage.setItem("y2k_tour_seen", finished ? "done" : "skipped"); } catch { /* private mode */ } };
   return (
@@ -64,10 +75,17 @@ export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: stri
           </div>
         </header>
         <nav data-tour="nav" aria-label="Admin sections" className="sticky top-0 z-20 -mx-5 flex gap-x-5 overflow-x-auto border-b border-line bg-bg px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
-          {TABS.filter((t) => t !== "Analytics" || isSuper).map((t) => (
-            <button key={t} data-tour={`tab-${t}`} onClick={() => setTab(t)} aria-current={tab === t ? "page" : undefined}
-              className={`min-h-12 shrink-0 border-b-2 px-1 text-sm transition-colors ${tab === t ? "border-crimson" : "muted border-transparent hover:text-fg"}`}>{t}</button>
-          ))}
+          {TABS.filter((t) => t !== "Analytics" || isSuper).map((t) => {
+            const n = badge[t] ?? 0;
+            return (
+              <button key={t} data-tour={`tab-${t}`} onClick={() => setTab(t)} aria-current={tab === t ? "page" : undefined}
+                aria-label={n > 0 ? `${t}, ${n} ${t === "Payments" ? "to review" : "need action"}` : undefined}
+                className={`inline-flex min-h-12 shrink-0 items-center gap-1.5 border-b-2 px-1 text-sm transition-colors ${tab === t ? "border-crimson" : "muted border-transparent hover:text-fg"}`}>
+                {t}
+                {n > 0 && <span aria-hidden="true" className="tnum inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-crimson px-1.5 text-[12px] font-semibold leading-none text-fg">{n > 99 ? "99+" : n}</span>}
+              </button>
+            );
+          })}
         </nav>
         <p className="muted mt-4 text-sm">{TAB_HELP[tab]}</p>
         <div className="slide-up mt-4" key={tab}>

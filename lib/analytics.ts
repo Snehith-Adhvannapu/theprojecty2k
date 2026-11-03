@@ -85,10 +85,21 @@ export async function analyticsSummary(days: Range = 7) {
             (SELECT count(*) FROM page_views WHERE (at AT TIME ZONE 'Asia/Kolkata')::date = (now() AT TIME ZONE 'Asia/Kolkata')::date)::int AS today
        FROM page_views WHERE at >= ${since}`, [days],
   );
-  const daily = (await query(
-    `SELECT to_char((at AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS d, count(*)::int AS views, count(DISTINCT visitor)::int AS visitors
-       FROM page_views WHERE at >= ${since} GROUP BY 1 ORDER BY 1`, [days],
-  )).map((r) => ({ day: r.d as string, views: r.views as number, visitors: r.visitors as number }));
+  // One point per day (or per hour for the last 24 hours), India time, with empty periods as 0 so the line is honest.
+  const series = days === 1
+    ? await query(
+        `SELECT to_char(g AT TIME ZONE 'Asia/Kolkata', 'HH24:00') AS label, COALESCE(v.views, 0)::int AS views, COALESCE(v.visitors, 0)::int AS visitors
+           FROM generate_series(date_trunc('hour', now()) - interval '23 hours', date_trunc('hour', now()), interval '1 hour') g
+           LEFT JOIN (SELECT date_trunc('hour', at) AS h, count(*) AS views, count(DISTINCT visitor) AS visitors
+                        FROM page_views WHERE at >= date_trunc('hour', now()) - interval '23 hours' GROUP BY 1) v ON v.h = g
+          ORDER BY g`)
+    : await query(
+        `SELECT to_char(g, 'DD Mon') AS label, COALESCE(v.views, 0)::int AS views, COALESCE(v.visitors, 0)::int AS visitors
+           FROM generate_series(((now() AT TIME ZONE 'Asia/Kolkata')::date - ($1::int - 1)), (now() AT TIME ZONE 'Asia/Kolkata')::date, interval '1 day') g
+           LEFT JOIN (SELECT (at AT TIME ZONE 'Asia/Kolkata')::date AS d, count(*) AS views, count(DISTINCT visitor) AS visitors
+                        FROM page_views WHERE at >= (((now() AT TIME ZONE 'Asia/Kolkata')::date - ($1::int - 1))::timestamp AT TIME ZONE 'Asia/Kolkata') GROUP BY 1) v ON v.d = g::date
+          ORDER BY g`, [days]);
+  const daily = series.map((r) => ({ label: r.label as string, views: r.views as number, visitors: r.visitors as number }));
 
   const [f] = await query(
     `SELECT (SELECT count(DISTINCT visitor) FROM page_views WHERE at >= ${since} AND path = '/')::int AS landing,

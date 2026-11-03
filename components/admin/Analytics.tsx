@@ -1,21 +1,21 @@
 "use client";
 // Superadmin only: site traffic and the visit-to-ticket funnel. Counts come from our own database; nothing leaves the site.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Tip } from "@/components/Tip";
 import { api } from "./api";
 
 interface Row { label: string; views: number; visitors: number }
+interface Pt { label: string; views: number; visitors: number }
 interface Data {
   days: number;
   totals: { views: number; visitors: number; live: number; today: number };
-  daily: { day: string; views: number; visitors: number }[];
+  daily: Pt[];
   pages: Row[]; sources: Row[]; countries: Row[]; cities: Row[]; devices: Row[]; browsers: Row[];
   funnel: { label: string; n: number }[];
 }
 
 const RANGES: [number, string][] = [[1, "24 hours"], [7, "7 days"], [30, "30 days"], [90, "90 days"]];
 const nf = new Intl.NumberFormat("en-IN");
-const dayLabel = (d: string) => new Date(`${d}T00:00:00+05:30`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 const COUNTRY = typeof Intl !== "undefined" && "DisplayNames" in Intl ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
 const country = (c: string) => { try { return COUNTRY?.of(c) ?? c; } catch { return c; } };
 
@@ -58,6 +58,96 @@ function BarList({ rows, fmt }: { rows: Row[]; fmt?: (l: string) => string }) {
   );
 }
 
+/** A round top value for the y axis, divisible by 4 so every gridline is a whole number. */
+function niceMax(v: number) {
+  const raw = Math.max(v, 4) / 4;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((x) => x >= raw) ?? raw;
+  return Math.ceil(step) * 4;
+}
+
+/** Two lines (page views, visitors) with real numbers: labelled gridlines, a value on every view point when there are few,
+ *  and a readout for the exact day or hour when you hover or touch the chart. */
+function LineChart({ data }: { data: Pt[] }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+  const [hi, setHi] = useState<number | null>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    ro.observe(el);
+    setW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  const H = 240, m = { l: 42, r: 16, t: 22, b: 30 };
+  const n = data.length;
+  const max = niceMax(Math.max(...data.map((x) => x.views), 1));
+  const iw = Math.max(w - m.l - m.r, 10), ih = H - m.t - m.b;
+  const x = (i: number) => m.l + (n === 1 ? iw / 2 : (i * iw) / (n - 1));
+  const y = (v: number) => m.t + ih - (v / max) * ih;
+  const line = (k: "views" | "visitors") => data.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`).join(" ");
+  const every = Math.max(1, Math.ceil((n * 58) / iw)); // keep x labels about 58px apart so none overlap
+  const pick = (ev: React.PointerEvent<SVGSVGElement>) => {
+    const r = ev.currentTarget.getBoundingClientRect();
+    setHi(Math.min(n - 1, Math.max(0, Math.round(((ev.clientX - r.left - m.l) / iw) * (n - 1)))));
+  };
+  const p = hi === null ? null : data[hi];
+
+  return (
+    <div ref={box} className="relative w-full">
+      <div className="muted mb-2 flex flex-wrap gap-x-5 gap-y-1 text-[13px]" aria-hidden="true">
+        <span className="inline-flex items-center gap-2"><span className="h-0.5 w-5 bg-crimson" />Page views</span>
+        <span className="inline-flex items-center gap-2"><span className="h-0.5 w-5 border-t-2 border-dashed border-chrome" />Visitors</span>
+      </div>
+      {w > 0 && (
+        <svg width={w} height={H} role="img" aria-label={`Line graph of page views and visitors. Highest value ${max}. Exact numbers are in the table below.`}
+          onPointerMove={pick} onPointerDown={pick} onPointerLeave={(ev) => { if (ev.pointerType === "mouse") setHi(null); }} style={{ touchAction: "pan-y" }}>
+          {[0, 1, 2, 3, 4].map((i) => {
+            const v = (max * i) / 4;
+            return (
+              <g key={i}>
+                <line x1={m.l} x2={w - m.r} y1={y(v)} y2={y(v)} stroke="var(--border)" strokeWidth={1} />
+                <text x={m.l - 8} y={y(v) + 4} textAnchor="end" fontSize={12} fill="var(--fg-muted)" className="tnum">{nf.format(v)}</text>
+              </g>
+            );
+          })}
+          {data.map((q, i) => {
+            const last = i === n - 1;
+            if (!(last || (i % every === 0 && n - 1 - i >= every * 0.6))) return null;
+            return <text key={i} x={x(i)} y={H - 8} textAnchor={n > 1 && i === 0 ? "start" : n > 1 && last ? "end" : "middle"} fontSize={12} fill="var(--fg-muted)">{q.label}</text>;
+          })}
+          {hi !== null && <line x1={x(hi)} x2={x(hi)} y1={m.t} y2={m.t + ih} stroke="var(--border-strong)" strokeWidth={1} />}
+          <path d={line("visitors")} fill="none" stroke="var(--chrome)" strokeWidth={2} strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
+          <path d={line("views")} fill="none" stroke="var(--crimson)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+          {n <= 31 && data.map((q, i) => <circle key={i} cx={x(i)} cy={y(q.views)} r={hi === i ? 5 : 3} fill="var(--bg)" stroke="var(--crimson)" strokeWidth={2} />)}
+          {n <= 12 && data.map((q, i) => q.views > 0 && (
+            <text key={i} x={x(i)} y={y(q.views) - 10} textAnchor="middle" fontSize={12} fontWeight={600} fill="var(--fg)" className="tnum">{nf.format(q.views)}</text>
+          ))}
+          {hi !== null && n <= 31 && <circle cx={x(hi)} cy={y(data[hi].visitors)} r={4} fill="var(--bg)" stroke="var(--chrome)" strokeWidth={2} />}
+        </svg>
+      )}
+      {p && hi !== null && (
+        <div role="status" className="card tnum pointer-events-none absolute z-10 w-40 px-3 py-2 text-[13px]" style={{ top: 34, left: Math.min(Math.max(x(hi) - 80, 0), Math.max(w - 160, 0)) }}>
+          <p className="font-semibold">{p.label}</p>
+          <p><span className="text-crimson">●</span> {nf.format(p.views)} page views</p>
+          <p><span className="text-chrome">●</span> {nf.format(p.visitors)} visitors</p>
+        </div>
+      )}
+      <details className="mt-3">
+        <summary className="muted inline-flex min-h-11 cursor-pointer items-center text-sm hover:text-fg">Show the exact numbers</summary>
+        <div className="mt-1 max-h-64 overflow-auto rounded-sm border border-line">
+          <table className="tnum w-full border-collapse text-sm">
+            <thead><tr className="bg-card text-left text-muted"><th scope="col" className="px-3 py-2 font-medium">{n > 0 && data[0].label.includes(":") ? "Hour" : "Day"}</th><th scope="col" className="px-3 py-2 text-right font-medium">Page views</th><th scope="col" className="px-3 py-2 text-right font-medium">Visitors</th></tr></thead>
+            <tbody>{[...data].reverse().map((q) => <tr key={q.label} className="border-t border-line"><th scope="row" className="px-3 py-2 text-left font-normal">{q.label}</th><td className="px-3 py-2 text-right">{nf.format(q.views)}</td><td className="px-3 py-2 text-right">{nf.format(q.visitors)}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  );
+}
+
 export function Analytics() {
   const [days, setDays] = useState(7);
   const [d, setD] = useState<Data | null>(null);
@@ -70,7 +160,6 @@ export function Analytics() {
   if (err && !d) return <p role="alert" className="rounded-sm border border-danger p-3 text-sm">{err}</p>;
   if (!d) return <div className="skeleton h-64" aria-busy="true" />;
 
-  const peak = Math.max(...d.daily.map((x) => x.views), 1);
   const f = d.funnel;
   const buy = f[0].n > 0 ? ((f[4].n / f[0].n) * 100).toFixed(1) : "0";
 
@@ -90,19 +179,8 @@ export function Analytics() {
         <Stat k="Visit to ticket" v={`${buy}%`} tip="Of the people who visited the landing page, the share who ended up with an approved ticket." sub={`${nf.format(f[4].n)} paid of ${nf.format(f[0].n)}`} />
       </section>
 
-      <Block solo title="Views per day" tip="One bar per day (India time). Taller means more page views. Hover or tap a bar for the numbers.">
-        {d.daily.length === 0 ? <p className="muted text-sm">No visits in this period yet.</p> : (
-          <>
-            <div className="flex h-40 items-end justify-center gap-[3px]" role="img" aria-label={`Daily page views, highest ${peak}`}>
-              {d.daily.map((x) => (
-                <div key={x.day} className="group relative flex h-full min-w-0 max-w-12 flex-1 items-end" title={`${dayLabel(x.day)}: ${x.views} views, ${x.visitors} visitors`}>
-                  <div className="w-full rounded-t-sm bg-crimson transition-colors group-hover:bg-fg" style={{ height: `${Math.max(2, (x.views / peak) * 100)}%` }} />
-                </div>
-              ))}
-            </div>
-            <div className="muted tnum mt-2 flex justify-between text-[13px]"><span>{dayLabel(d.daily[0].day)}</span><span>{dayLabel(d.daily[d.daily.length - 1].day)}</span></div>
-          </>
-        )}
+      <Block solo title={days === 1 ? "Views by hour" : "Views per day"} tip="Red line: page views. Dashed line: visitors. Hover or touch the graph to read the exact numbers for a day or hour (India time). Every period is shown, including ones with no visits.">
+        <LineChart data={d.daily} />
       </Block>
 
       <Block solo title="From visit to ticket" tip="How many people reach each step. The percentage is the share of the step before. Big drops show where people give up.">

@@ -35,6 +35,10 @@ describe("analytics", () => {
     expect(s.pages[0]).toMatchObject({ label: "/", views: 2, visitors: 2 });
     expect(s.sources.some((r) => r.label === "instagram.com")).toBe(true);
     expect(s.funnel[0].n).toBe(2);
+    expect(s.daily).toHaveLength(7); // every day is a point, empty days are 0
+    expect(s.daily.at(-1)).toMatchObject({ views: 3, visitors: 2 });
+    expect((await analyticsSummary(1)).daily).toHaveLength(24); // hourly for the last 24 hours
+    expect((await analyticsSummary(30)).daily).toHaveLength(30);
     const raw = JSON.stringify(await query("SELECT * FROM page_views"));
     expect(raw).not.toContain("203.0.113.7");
   });

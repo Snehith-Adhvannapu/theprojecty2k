@@ -138,6 +138,8 @@ export async function reserveOrder(input: ReserveInput): Promise<ReservedOrder> 
         amount += l.qty * (p.price_paise + p.fee_paise);
         fee += l.qty * p.fee_paise;
       }
+      // One flat booking fee per order (never for an all-free order). Computed here, so a buyer can't alter it.
+      if (amount > 0) { amount += eventConfig.bookingFeePaise; fee += eventConfig.bookingFeePaise; }
 
       const [order] = await q.query(
         `INSERT INTO orders (event_id, buyer_name, buyer_phone, buyer_email, buyer_instagram,

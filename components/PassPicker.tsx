@@ -2,7 +2,7 @@
 // The landing page's only client island. Passes and live availability come from one
 // edge-cached endpoint, so the page itself stays static (no DB on render).
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { paise } from "@/lib/normalize";
 import { Tip } from "@/components/Tip";
 
@@ -15,6 +15,13 @@ export function PassPicker() {
   const [passes, setPasses] = useState<Pass[] | null>(null);
   const [error, setError] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
+  const bar = useRef<HTMLDivElement>(null);
+
+  // Choosing a pass brings the Continue button into view, so nobody has to hunt for the next step.
+  const choose = (id: string) => {
+    setPicked(id);
+    requestAnimationFrame(() => bar.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  };
 
   const load = useCallback(async () => {
     try {
@@ -70,7 +77,7 @@ export function PassPicker() {
               type="button"
               disabled={disabled}
               aria-pressed={picked === p.id}
-              onClick={() => setPicked(p.id)}
+              onClick={() => choose(p.id)}
               className={`pass card-plain flex min-w-[280px] flex-1 basis-[280px] flex-col gap-3 p-7 text-left ${disabled ? "opacity-60" : ""}`}
             >
               <span className="flex items-baseline justify-between gap-3">
@@ -89,7 +96,7 @@ export function PassPicker() {
         })}
       </div>
 
-      <div className="card-plain mt-6 flex flex-wrap items-center justify-between gap-4 px-6 py-5" aria-live="polite">
+      <div ref={bar} className="card-plain mt-6 flex scroll-mb-24 flex-wrap items-center justify-between gap-4 px-6 py-5" aria-live="polite">
         <p>
           {sel ? (
             <>

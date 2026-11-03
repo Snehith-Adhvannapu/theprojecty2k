@@ -26,6 +26,7 @@ export function CheckoutForm() {
   const router = useRouter();
   const passId = useSearchParams().get("pass");
   const [pass, setPass] = useState<Pass | null | undefined>(undefined); // undefined = loading, null = not found
+  const [bookingFee, setBookingFee] = useState<number>(e.bookingFeePaise);
   const [qty, setQty] = useState(1);
   const [f, setF] = useState<Fields>({ name: "", phone: "", email: "", instagram: "" });
   const [accepted, setAccepted] = useState(false);
@@ -49,15 +50,18 @@ export function CheckoutForm() {
   useEffect(() => {
     fetch("/api/event").then((r) => r.json()).then((j) => {
       const p = (j.data?.passes as Pass[] | undefined)?.find((x) => x.id === passId);
+      if (typeof j.data?.event?.bookingFeePaise === "number") setBookingFee(j.data.event.bookingFeePaise);
       setPass(p ?? null);
     }).catch(() => setPass(null));
   }, [passId]);
 
   const limit = pass ? Math.max(1, Math.min(maxPer, pass.available)) : 1;
   const money = useMemo(() => {
-    if (!pass) return { sub: 0, fee: 0, total: 0 };
-    return { sub: pass.pricePaise * qty, fee: pass.feePaise * qty, total: (pass.pricePaise + pass.feePaise) * qty };
-  }, [pass, qty]);
+    if (!pass) return { sub: 0, fee: 0, booking: 0, total: 0 };
+    const sub = pass.pricePaise * qty;
+    const booking = sub > 0 ? bookingFee : 0; // the server adds the same flat fee once per booking
+    return { sub, fee: pass.feePaise * qty, booking, total: (pass.pricePaise + pass.feePaise) * qty + booking };
+  }, [pass, qty, bookingFee]);
 
   const busy = phase === "starting";
   const set = (k: keyof Fields) => (ev: React.ChangeEvent<HTMLInputElement>) => {
@@ -166,6 +170,7 @@ export function CheckoutForm() {
           <div className="card tnum mt-3 flex flex-col gap-3 p-5">
             <div className="flex justify-between gap-4"><span>{pass.name} × {qty}</span><span>{paise(money.sub)}</span></div>
             {pass.feePaise > 0 && <div className="muted flex justify-between gap-4"><span className="inline-flex items-center gap-1.5">Processing fee<Tip text="A small extra charge per pass. It is already included in the total below, so the price you see is the price you pay." /></span><span>{paise(money.fee)}</span></div>}
+            {money.booking > 0 && <div className="muted flex justify-between gap-4"><span className="inline-flex items-center gap-1.5">Booking fee<Tip text={`A flat ${paise(money.booking)} for the whole booking, however many tickets you buy. It covers tax, upkeep and the running costs of the website. It is already included in the total below.`} /></span><span>{paise(money.booking)}</span></div>}
             <div className="h-px bg-line" />
             <div className="flex items-baseline justify-between gap-4"><span className="font-semibold">Total (INR)</span><span className="text-2xl font-semibold">{paise(money.total)}</span></div>
           </div>
@@ -186,16 +191,29 @@ export function CheckoutForm() {
           <p role="alert" className="mt-4 rounded-sm border border-danger p-3 text-sm">{message}</p>
         )}
 
-        <button type="submit" className="btn btn-primary btn-calm btn-block mt-4" disabled={busy} aria-busy={busy}>
-          {busy && <span className="spinner" aria-hidden="true" />}
-          {label}
-        </button>
-        <p className="muted mt-3 text-center text-[13px]">Next: pay by UPI, then upload your payment proof. All prices in INR.</p>
+        {/* Pinned to the bottom of the screen on phones so the next step is always one tap away. */}
+        <div className="sticky bottom-0 z-20 -mx-5 mt-4 border-t border-line bg-bg px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:static sm:mx-0 sm:border-0 sm:p-0">
+          <button type="submit" className="btn btn-primary btn-calm btn-block" disabled={busy} aria-busy={busy}>
+            {busy && <span className="spinner" aria-hidden="true" />}
+            {label}
+          </button>
+          <p className="muted mt-2 text-center text-[13px]">Next: pay by UPI, then upload your payment proof. All prices in INR.</p>
+        </div>
       </form>
 
       <div className="muted mt-7 border-t border-line pt-5 text-sm">
-        <p><span className="text-fg">What happens next.</span> You pay by UPI and send us the UTR and a screenshot. We verify it by hand, then email your ticket as a PDF. Need help? WhatsApp {e.organiser.whatsapp}.</p>
+        <p><span className="text-fg">What happens next.</span> You pay by UPI and send us the UTR and a screenshot. We verify it by hand, then email your ticket as a PDF.</p>
       </div>
+      <section aria-label="Help" className="card-plain mt-5 flex flex-wrap items-center justify-between gap-4 p-5">
+        <div className="min-w-[200px] flex-1">
+          <p className="font-semibold">Any doubt before you book?</p>
+          <p className="muted mt-1 text-sm">A real person replies on WhatsApp, any time.</p>
+        </div>
+        <a className="btn btn-quiet btn-calm min-h-11 px-5" target="_blank" rel="noopener noreferrer"
+          href={`https://wa.me/${e.organiser.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi Project Y2K, I have a question before I book the ${pass.name}.`)}`}>
+          Chat on WhatsApp <span className="arrow" aria-hidden="true">→</span>
+        </a>
+      </section>
     </div>
   );
 }

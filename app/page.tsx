@@ -8,6 +8,7 @@ import { eventConfig as e } from "@/config/event";
 import { Logo } from "@/components/Logo";
 import { PassPicker } from "@/components/PassPicker";
 import { SiteFooter } from "@/components/SiteFooter";
+import { StickyCta } from "@/components/StickyCta";
 
 // Static: built at deploy, zero DB calls on render. Availability arrives via PassPicker.
 export const dynamic = "force-static";
@@ -33,7 +34,7 @@ export default async function Home() {
   const about = L.about;
   const ld = JSON.stringify(structuredData(await passPrices())).replace(/</g, "\\u003c");
   return (
-    <main id="top" className="overflow-x-clip">
+    <main id="top" className="overflow-x-clip pb-20 md:pb-0">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <header className="sticky top-0 z-30 border-b border-line bg-bg">
         <div className="wrap flex items-center justify-between gap-4 py-1.5">
@@ -197,6 +198,7 @@ export default async function Home() {
       </section>
 
       <SiteFooter />
+      <StickyCta />
     </main>
   );
 }

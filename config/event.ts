@@ -63,6 +63,8 @@ export const eventConfig = {
     reviewHoldHours: 24,
   },
   limits: { maxPassesPerOrder: 15, holdMinutes: 20, maxPendingPerPhone: 2 },
+  // Flat fee added once per booking (not per ticket): tax, upkeep and website costs. Added server-side when the order is created.
+  bookingFeePaise: 3000,
 };
 
 export const isPlaceholder = (s: string) => /\[[^\]]+\]/.test(s);

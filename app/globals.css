@@ -269,3 +269,23 @@ a, .card, .card-plain { transition: color 0.2s var(--ease-out), border-color 0.2
 @media (prefers-reduced-motion: reduce) {
   .tour-ring, .tour-card, .tour-bar, .tour-tap { animation: none; transition: none; }
 }
+
+/* Phone bar: glides away when the passes section is on screen. */
+.sticky-cta { transition: transform 0.35s var(--ease-out), opacity 0.35s var(--ease-out); }
+.sticky-cta-off { transform: translateY(110%); opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .sticky-cta { transition: none; } }
+
+/* Welcome after a ticket is confirmed: slow staggered rise, a line that draws itself, one shimmer along the ticket edge. */
+.welcome-rise { animation: slide-up 0.8s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 140ms); }
+.rule-draw { transform-origin: left; animation: rule-draw 1.1s var(--ease-out) 0.35s both; }
+@keyframes rule-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.elite { position: relative; }
+.elite::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, var(--chrome) 50%, transparent 62%) 160% 0 / 260% 100% no-repeat;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: edge-sheen 2.2s var(--ease-out) 0.9s 1 both;
+}
+@keyframes edge-sheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }
+@media (prefers-reduced-motion: reduce) { .welcome-rise, .rule-draw { animation: none; } .elite::after { animation: none; opacity: 0; } }

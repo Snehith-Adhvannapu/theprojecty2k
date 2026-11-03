@@ -99,7 +99,8 @@ async function ticketMail(orderId: string, to: string): Promise<Mail> {
 <a href="${appUrl()}/t/${t.token}" style="display:inline-block;background:#e3302f;color:#fff;text-decoration:none;padding:12px 18px;font-weight:700">Open ticket</a></div>`,
     )
     .join("");
-  const inner = `<p>You're in. Your ticket PDF is attached and also on the ticket page. If your phone has no signal at the door, show the short code below.</p>
+  const inner = `<p style="margin:0 0 14px;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#e3302f">You&#39;re on the list</p>
+<p>Welcome to the night. Your ticket PDF is attached and also on the ticket page. If your phone has no signal at the door, show the short code below.</p>
 ${blocks}
 <p style="font-size:14px;color:#cbced2">${esc(eventConfig.dateLabel)} · Doors ${esc(eventConfig.doorsOpen)}<br>${esc(eventConfig.venue.name)}, ${esc(eventConfig.venue.address)}<br>Carry a valid government photo ID.</p>
 <p style="margin:0 0 6px"><a href="${eventConfig.venue.mapUrl}" style="color:#f1eeea;font-weight:700;border-bottom:1px solid #e3302f;text-decoration:none">Get directions in Google Maps &rarr;</a></p>`;

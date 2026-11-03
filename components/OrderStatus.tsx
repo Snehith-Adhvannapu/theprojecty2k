@@ -8,6 +8,7 @@ import { rememberOrder } from "@/lib/myOrders";
 import { paise } from "@/lib/normalize";
 import { HelpWhatsApp } from "./HelpWhatsApp";
 import { Tip } from "@/components/Tip";
+import { WelcomeActions } from "@/components/WelcomeActions";
 
 interface T { token: string; shortCode: string; admits: number; passName: string; holderName: string; status: string }
 interface S { emailMasked: string; status: "pending" | "awaiting_review" | "rejected" | "paid" | "expired" | "needs_refund" | "refunded"; amountPaise: number; expiresAt: string; reviewNote: string | null; tickets: T[] }
@@ -43,14 +44,17 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
   if (!s) return <div className="mt-8 space-y-4" aria-busy="true"><div className="skeleton h-28" /><div className="skeleton h-72" /></div>;
 
   if (s.status === "paid") {
+    const first = (s.tickets[0]?.holderName ?? "").trim().split(/\s+/)[0];
     return (
       <div className="mt-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <svg className="check-draw pop size-9 shrink-0 text-fg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.5" strokeWidth="1.2" /><path d="M7 12.5l3.2 3.2L17 9" /></svg>
-          <div>
-            <h1 className="text-[22px] leading-tight">Payment confirmed</h1>
-            <p className="muted text-sm">{paise(s.amountPaise)} · A copy is on its way to your email.</p>
+        <div className="welcome-rise" style={{ "--i": 0 } as React.CSSProperties}>
+          <div className="flex items-center gap-3">
+            <svg className="check-draw pop size-9 shrink-0 text-fg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10.5" strokeWidth="1.2" /><path d="M7 12.5l3.2 3.2L17 9" /></svg>
+            <p className="eyebrow">You&apos;re on the list</p>
           </div>
+          <h1 className="mt-3 text-[30px] leading-[1.1]">{first ? <>Welcome, <em>{first}.</em></> : <>Welcome <em>in.</em></>}</h1>
+          <span className="rule-draw mt-3 block h-px w-24 bg-crimson" aria-hidden="true" />
+          <p className="muted mt-3 text-[15px]">{paise(s.amountPaise)} confirmed. Your ticket is below, and a copy is on its way to your email. See you inside, {e.dateLabel}.</p>
         </div>
         {s.tickets.map((t, i) => <TicketCard key={t.token} t={{ ...t, status: t.status as "valid" }} delay={i + 1} />)}
         <p className="muted text-center text-sm">Screenshot this page. If the QR won&apos;t scan, read your short code to the volunteer. Your name and ID will be checked at the door.</p>
@@ -59,6 +63,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
           {s.tickets[0] && <a href={`/api/tickets/${s.tickets[0].token}/pdf`} className="btn btn-calm btn-quiet min-h-12 flex-1">Download PDF</a>}
           {whatsapp && <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet min-h-12 flex-1">WhatsApp help</a>}
         </div>
+        <WelcomeActions />
       </div>
     );
   }

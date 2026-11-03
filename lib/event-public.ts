@@ -15,4 +15,5 @@ export const publicEvent = () => ({
   name: eventConfig.name,
   dateLabel: eventConfig.dateLabel,
   maxPerOrder: eventConfig.limits.maxPassesPerOrder,
+  bookingFeePaise: eventConfig.bookingFeePaise,
 });

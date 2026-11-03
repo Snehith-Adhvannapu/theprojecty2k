@@ -11,7 +11,7 @@ export interface TicketCardData {
 export function TicketCard({ t, delay = 0 }: { t: TicketCardData; delay?: number }) {
   const dead = t.status === "revoked" || t.status === "used";
   return (
-    <section aria-label="Your ticket" className="card slide-up overflow-hidden" style={{ "--i": delay } as React.CSSProperties}>
+    <section aria-label="Your ticket" className={`card slide-up overflow-hidden ${dead ? "" : "elite"}`} style={{ "--i": delay } as React.CSSProperties}>
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-center justify-between gap-3">
           <Image src="/images/y2k26-logo-sm.webp" alt="Project Y2K26" width={240} height={185} style={{ height: 56, width: "auto" }} />

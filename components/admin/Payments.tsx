@@ -20,7 +20,7 @@ const wa = (phone: string, name: string, token: string) => {
 /** WhatsApp message to the buyer about a payment that could not be confirmed. */
 const waNotConfirmed = (phone: string, name: string, orderId: string, note: string | null, refund: boolean) => {
   const text = refund
-    ? `Hi ${name}, sorry: your Project Y2K pass sold out before we could confirm your payment. We'll refund you in full to the account you paid from.`
+    ? `Hi ${name}, this is Project Y2K. We're refunding your payment in full. Please reply with your UPI ID or a screenshot of your UPI QR code and we'll send it right away.`
     : `Hi ${name}, we couldn't confirm your Project Y2K payment${note ? `: ${note}` : ""}. ${note ? "You can fix it here: " : "Details: "}${window.location.origin}/order/${orderId}`;
   return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
 };

@@ -11,7 +11,7 @@ interface Ledger { owed: Row[]; done: Row[]; totals: { owedCount: number; owedPa
 const METHODS: [string, string][] = [["upi", "UPI app"], ["whatsapp", "Agreed on WhatsApp"], ["cash", "Cash"], ["other", "Other"]];
 const methodLabel = (m?: string) => METHODS.find(([k]) => k === m)?.[1] ?? m ?? "";
 
-const waOwed = (r: Row) => `https://wa.me/${r.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${r.name}, this is Project Y2K about your refund of ${paise(r.amountPaise)}. Please reply with the UPI ID you'd like it sent to.`)}`;
+const waOwed = (r: Row) => `https://wa.me/${r.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${r.name}, this is Project Y2K about your refund of ${paise(r.amountPaise)}. Please reply with your UPI ID or a screenshot of your UPI QR code, and we'll send it right away.`)}`;
 const waSent = (r: Row) => `https://wa.me/${r.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${r.name}, your Project Y2K refund of ${paise(r.amountPaise)} has been sent. It can take a short while to show in your bank.`)}`;
 
 export function Refunds() {
@@ -84,7 +84,7 @@ function Owed({ r, done }: { r: Row; done: () => void }) {
       {!open ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <a className="btn btn-quiet btn-calm min-h-11 flex-1 px-4 text-sm sm:flex-none" href={`tel:${r.phone}`}>Call</a>
-          <a className="btn btn-quiet btn-calm min-h-11 flex-1 px-4 text-sm sm:flex-none" href={waOwed(r)} target="_blank" rel="noopener noreferrer">Ask for UPI ID</a>
+          <a className="btn btn-quiet btn-calm min-h-11 flex-1 px-4 text-sm sm:flex-none" href={waOwed(r)} target="_blank" rel="noopener noreferrer">Ask for UPI ID / QR</a>
           <button className="btn btn-primary btn-calm min-h-11 basis-full px-5 text-sm sm:basis-auto" onClick={() => setOpen(true)}>Mark as refunded</button>
         </div>
       ) : (

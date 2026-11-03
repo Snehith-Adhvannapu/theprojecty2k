@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { AppError } from "@/lib/errors";
 import { normalizeEmail } from "@/lib/normalize";
 import { query, transaction } from "@/lib/db";
@@ -134,6 +135,7 @@ export async function upsertPass(actorId: string, p: PassInput) {
       [p.id, p.name, p.description, p.pricePaise, p.feePaise, p.totalQty, p.admits, p.active, p.sort, p.salesStart, p.salesEnd],
     );
     await audit(actorId, "pass_updated", p.id, { price: p.pricePaise, total: p.totalQty, active: p.active });
+    try { revalidatePath("/"); } catch { /* not in a request context (tests) */ } // keeps the Event price markup current
     return p.id;
   }
   const [ev] = await query("SELECT id FROM events ORDER BY created_at LIMIT 1");
@@ -143,6 +145,7 @@ export async function upsertPass(actorId: string, p: PassInput) {
     [ev.id, p.name, p.description, p.pricePaise, p.feePaise, p.totalQty, p.admits, p.active, p.sort, p.salesStart, p.salesEnd],
   );
   await audit(actorId, "pass_created", row.id, { name: p.name });
+  try { revalidatePath("/"); } catch { /* not in a request context (tests) */ }
   return row.id as string;
 }
 

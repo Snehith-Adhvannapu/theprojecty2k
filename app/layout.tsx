@@ -1,4 +1,4 @@
-import { appUrl } from "@/lib/app-url";
+import { SEO_DESCRIPTION, SEO_KEYWORDS, SEO_TITLE, SITE_URL, isIndexableHost } from "@/lib/seo";
 import { Track } from "@/components/Track";
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Cormorant_Garamond, Manrope } from "next/font/google";
@@ -12,17 +12,32 @@ const cormorant = Cormorant_Garamond({
 });
 const manrope = Manrope({ weight: ["400", "500", "600", "800"], subsets: ["latin"], variable: "--font-manrope", display: "swap" });
 
+const OG_IMAGE = { url: "/images/og.jpg", width: 1200, height: 630, alt: "Poster: Project Y2K presents The Matrix, Hyderabad's first theatre rave, 15 November 2026" };
+
 export const metadata: Metadata = {
-  title: { default: `${eventConfig.name} · ${eventConfig.dateLabel}`, template: `%s · ${eventConfig.name}` },
-  description: eventConfig.description,
-  metadataBase: new URL(appUrl()),
+  // Always the real domain, so a test host (aws.*) never advertises itself as the canonical address.
+  metadataBase: new URL(SITE_URL),
+  title: { default: SEO_TITLE, template: `%s · ${eventConfig.name}` },
+  description: SEO_DESCRIPTION,
+  applicationName: eventConfig.name,
+  keywords: SEO_KEYWORDS,
+  category: "events",
+  alternates: { canonical: "./" },
+  openGraph: { type: "website", siteName: eventConfig.name, locale: "en_IN", title: SEO_TITLE, description: SEO_DESCRIPTION, url: "/", images: [OG_IMAGE] },
+  twitter: { card: "summary_large_image", title: SEO_TITLE, description: SEO_DESCRIPTION, images: [OG_IMAGE.url] },
+  robots: isIndexableHost()
+    ? { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } }
+    : { index: false, follow: false },
+  formatDetection: { telephone: false },
+  // Google Search Console HTML-tag verification, only if you choose that method (DNS verification needs nothing here).
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
 export const viewport: Viewport = { themeColor: "#050505", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${bebas.variable} ${cormorant.variable} ${manrope.variable}`}>
+    <html lang="en-IN"className={`${bebas.variable} ${cormorant.variable} ${manrope.variable}`}>
       <body>{children}<Track /></body>
     </html>
   );

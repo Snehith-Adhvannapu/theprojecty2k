@@ -1,4 +1,6 @@
 import { getLanding } from "@/lib/site-content";
+import { query } from "@/lib/db";
+import { structuredData } from "@/lib/seo";
 import { Rich } from "@/components/Rich";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,11 +18,23 @@ const photos = [
   { src: "/images/last-dj.webp", w: 720, h: 1280, alt: "The DJ under the Project Y2K screen with the crowd in front", cls: "col-span-2 sm:col-span-1 [&_img]:aspect-[4/3] sm:[&_img]:aspect-[3/4]" },
 ];
 
+/** Lowest and highest active pass price for the Event markup. Read once at build; a pass edit revalidates the page. */
+async function passPrices() {
+  try {
+    const [r] = await query("SELECT min(price_paise)::int AS low, max(price_paise)::int AS high, count(*)::int AS n FROM pass_types WHERE active");
+    return r && r.n > 0 ? { low: r.low as number, high: r.high as number, count: r.n as number } : null;
+  } catch {
+    return null; // no DB at build time: leave the price out rather than guess
+  }
+}
+
 export default async function Home() {
   const L = await getLanding();
   const about = L.about;
+  const ld = JSON.stringify(structuredData(await passPrices())).replace(/</g, "\\u003c");
   return (
     <main id="top" className="overflow-x-clip">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
       <header className="sticky top-0 z-30 border-b border-line bg-bg">
         <div className="wrap flex items-center justify-between gap-4 py-1.5">
           <Logo tag="The Matrix" />
@@ -38,9 +52,11 @@ export default async function Home() {
         <div className="wrap flex flex-wrap items-center gap-x-14 gap-y-10 pt-14 pb-16 md:pb-20">
           <div className="min-w-0 flex-[1_1_480px]">
             <p className="in eyebrow" style={{ "--i": 0 } as React.CSSProperties}>✦ {e.dateLabel}</p>
-            <h1 className="sr-only">Project Y2K26: The Matrix</h1>
             <div className="in mt-5 max-w-[46ch]" style={{ "--i": 3 } as React.CSSProperties}>
-              <p className="text-[22px] font-semibold leading-snug">{about.heading}</p>
+              <h1 className="text-[22px] font-semibold leading-snug">
+                {about.heading}
+                <span className="sr-only"> | Project Y2K: The Matrix at {e.venue.name}, Hyderabad, {e.dateLabel}</span>
+              </h1>
               {about.lead && <p className="mt-3 text-lg font-medium">{about.lead}</p>}
               {about.paras.map((t, i) => <p key={i} className="muted mt-3 whitespace-pre-line text-[17px] leading-relaxed">{t}</p>)}
               {about.closer && <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-crimson">{about.closer}</p>}

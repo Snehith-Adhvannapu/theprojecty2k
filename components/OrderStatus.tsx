@@ -6,6 +6,7 @@ import { TicketCard } from "@/components/TicketCard";
 import { PaymentProof } from "@/components/PaymentProof";
 import { rememberOrder } from "@/lib/myOrders";
 import { paise } from "@/lib/normalize";
+import { HelpWhatsApp } from "./HelpWhatsApp";
 
 interface T { token: string; shortCode: string; admits: number; passName: string; holderName: string; status: string }
 interface S { emailMasked: string; status: "pending" | "awaiting_review" | "rejected" | "paid" | "expired" | "needs_refund" | "refunded"; amountPaise: number; expiresAt: string; reviewNote: string | null; tickets: T[] }
@@ -63,10 +64,13 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
 
   if (s.status === "expired") {
     return (
-      <Notice title="Your hold on these passes ended.">
-        Already paid? {help} with your UTR and phone number and we&apos;ll sort it out. Otherwise,{" "}
-        <Link href="/#passes" className="border-b border-blood text-fg">pick passes again</Link>.
-      </Notice>
+      <>
+        <Notice title="Your hold on these passes ended.">
+          Already paid? Tell us below with your UTR and we&apos;ll sort it out. Otherwise,{" "}
+          <Link href="/#passes" className="border-b border-blood text-fg">pick passes again</Link>.
+        </Notice>
+        <HelpWhatsApp orderId={orderId} amountPaise={s.amountPaise} />
+      </>
     );
   }
   if (s.status === "needs_refund") {

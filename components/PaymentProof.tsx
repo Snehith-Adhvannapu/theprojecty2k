@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { eventConfig as e } from "@/config/event";
 import { paise } from "@/lib/normalize";
+import { HelpWhatsApp } from "./HelpWhatsApp";
 
 const MAX_SIDE = 1100;
 const MAX_BYTES = 1_400_000;
@@ -179,6 +180,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
         </button>
         <p className="muted mt-3 text-center text-[13px]">We check every payment by hand against our bank account. Your ticket is emailed as a PDF once it&apos;s confirmed.</p>
       </form>
+      <HelpWhatsApp orderId={orderId} amountPaise={amountPaise} />
     </div>
   );
 }

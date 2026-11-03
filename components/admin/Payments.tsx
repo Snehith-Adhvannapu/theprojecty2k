@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { paise } from "@/lib/normalize";
 import { formatFullIST } from "@/lib/time";
 import { api } from "./api";
+import { fillWa, WA_DEFAULTS, WA_KINDS, WA_LABEL, WA_PLACEHOLDERS, type WaKind, type WaTemplates } from "@/lib/wa-fill";
 
 interface Row {
   id: string; status: string; buyerName: string; buyerPhone: string; buyerEmail: string; items: string;
@@ -17,13 +18,12 @@ const wa = (phone: string, name: string, token: string) => {
   return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
 };
 
-/** WhatsApp message to the buyer about a payment that could not be confirmed. */
-const waNotConfirmed = (phone: string, name: string, orderId: string, note: string | null, refund: boolean) => {
-  const text = refund
-    ? `Hi ${name}, this is Project Y2K. We're refunding your payment in full. Please reply with your UPI ID or a screenshot of your UPI QR code and we'll send it right away.`
-    : `Hi ${name}, we couldn't confirm your Project Y2K payment${note ? `: ${note}` : ""}. ${note ? "You can fix it here: " : "Details: "}${window.location.origin}/order/${orderId}`;
-  return `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
-};
+/** The text of a rejection message for one buyer, from a template (placeholders filled in). */
+const waText = (t: string, r: Row, reason: string) =>
+  fillWa(t, { name: r.buyerName, amount: paise(r.amountPaise), reason: reason || "we could not match it to our bank record", link: `${window.location.origin}/order/${r.id}`, order: r.id.slice(0, 8).toUpperCase() });
+const waTo = (phone: string, text: string) => `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+/** Which preset a past decision used. */
+const kindOf = (r: Row): WaKind => (r.status === "needs_refund" ? "refund" : r.status === "rejected" ? "reject" : "fix");
 
 /** WhatsApp message asking the buyer to confirm a payment (used before deciding, and when reconsidering a rejection). */
 const waConfirm = (phone: string, name: string, amountPaise: number, utr: string | null) => {
@@ -51,6 +51,8 @@ const REASONS = [
 export function Payments({ focusOrder }: { focusOrder?: string }) {
   const [q, setQ] = useState<Queue | null>(null);
   const [err, setErr] = useState("");
+  const [tpls, setTpls] = useState<WaTemplates>(WA_DEFAULTS);
+  useEffect(() => { fetch("/api/admin/templates", { cache: "no-store" }).then((r) => r.json()).then((j) => { if (j?.ok) setTpls(j.data); }).catch(() => {}); }, []);
   const load = useCallback(async () => {
     try { setQ(await api<Queue>("/api/admin/payments")); setErr(""); } catch (e) { setErr(e instanceof Error ? e.message : "Failed"); }
   }, []);
@@ -72,7 +74,7 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
         <button className="muted inline-flex min-h-11 items-center text-sm hover:text-fg" onClick={load}>Refresh</button>
       </div>
       {q.pending.length === 0 && <p className="card-plain muted p-5 text-sm">Nothing waiting. New payments show up here as soon as buyers submit their UTR.</p>}
-      {q.pending.map((r) => <Pending key={r.id} r={r} done={load} focus={r.id === focusOrder} />)}
+      {q.pending.map((r) => <Pending key={r.id} r={r} done={load} focus={r.id === focusOrder} tpls={tpls} onSaved={setTpls} />)}
 
       {q.reviewed.length > 0 && (
         <section className="mt-4">
@@ -92,7 +94,7 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
                   {r.canReverse && <Owe r={r} done={load} />}
                   {r.status !== "paid" && r.buyerPhone && <a className="inline-flex min-h-11 items-center border-b border-blood" href={`tel:${r.buyerPhone}`}>Call</a>}
                   {r.status !== "paid" && r.status !== "needs_refund" && <a className="inline-flex min-h-11 items-center border-b border-blood" href={waConfirm(r.buyerPhone, r.buyerName, r.amountPaise, r.utr)} target="_blank" rel="noreferrer">WhatsApp to confirm</a>}
-                  {r.status !== "paid" && <a className="inline-flex min-h-11 items-center border-b border-blood" href={waNotConfirmed(r.buyerPhone, r.buyerName, r.id, r.reviewNote, r.status === "needs_refund")} target="_blank" rel="noreferrer">Tell them on WhatsApp</a>}
+                  {r.status !== "paid" && <a className="inline-flex min-h-11 items-center border-b border-blood" href={waTo(r.buyerPhone, waText(tpls[kindOf(r)], r, r.reviewNote ?? ""))} target="_blank" rel="noreferrer">Tell them on WhatsApp</a>}
                 </span>
               </li>
             ))}
@@ -142,11 +144,18 @@ function Reverse({ r, done }: { r: Row; done: () => void }) {
   );
 }
 
-function Pending({ r, done, focus }: { r: Row; done: () => void; focus: boolean }) {
+function Pending({ r, done, focus, tpls, onSaved }: { r: Row; done: () => void; focus: boolean; tpls: WaTemplates; onSaved: (t: WaTemplates) => void }) {
   const [mode, setMode] = useState<"idle" | "confirm" | "reject">("idle");
   const [reason, setReason] = useState("");
+  const [kind, setKind] = useState<WaKind>("fix");
+  const [draft, setDraft] = useState<string | null>(null); // null = the saved preset as is
+  const [sendWa, setSendWa] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const tpl = draft ?? tpls[kind];
+  const dirty = tpl.trim() !== tpls[kind].trim();
 
   async function run(fn: () => Promise<unknown>) {
     setBusy(true); setMsg("");
@@ -156,7 +165,23 @@ function Pending({ r, done, focus }: { r: Row; done: () => void; focus: boolean 
     const r2 = await api<{ result: string }>(`/api/admin/orders/${r.id}/approve`, {});
     if (r2.result === "needs_refund") throw new Error("Passes sold out in the meantime. Marked as needing a refund; refund this buyer.");
   });
-  const reject = (resubmit: boolean, refund = false) => run(() => api(`/api/admin/orders/${r.id}/reject`, { reason, resubmit, refund }));
+  const pick = (k: WaKind) => { setKind(k); setDraft(null); setSaved(false); };
+  // Open WhatsApp from the tap itself (phones block pop-ups opened after a wait); point it at the message once the rejection succeeds.
+  const reject = () => {
+    const w = sendWa ? window.open("about:blank", "_blank") : null;
+    return run(async () => {
+      try {
+        await api(`/api/admin/orders/${r.id}/reject`, { reason, resubmit: kind === "fix", refund: kind === "refund" });
+      } catch (e) { w?.close(); throw e; }
+      if (w) w.location.href = waTo(r.buyerPhone, waText(tpl, r, reason));
+    });
+  };
+  async function savePreset() {
+    setSaving(true); setMsg("");
+    try { onSaved(await api<WaTemplates>("/api/admin/templates", { ...tpls, [kind]: tpl })); setDraft(null); setSaved(true); }
+    catch (e) { setMsg(e instanceof Error ? e.message : "Couldn't save"); }
+    setSaving(false);
+  }
 
   return (
     <article id={`pay-${r.id}`} className={`card p-5 ${focus ? "!border-crimson" : ""}`} aria-label={`Payment from ${r.buyerName}`}>
@@ -211,13 +236,43 @@ function Pending({ r, done, focus }: { r: Row; done: () => void; focus: boolean 
             ))}
           </div>
           <input id={`rr-${r.id}`} className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Or type your own reason" disabled={busy} />
+
+          <fieldset className="flex flex-col gap-2" disabled={busy}>
+            <legend className="text-sm font-medium">What happens</legend>
+            {WA_KINDS.map((k) => (
+              <label key={k} className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-sm border p-3 text-sm ${kind === k ? "border-crimson" : "border-line"}`}>
+                <input type="radio" name={`k-${r.id}`} className="mt-1" checked={kind === k} onChange={() => pick(k)} />
+                <span><strong className="text-fg">{WA_LABEL[k]}</strong>
+                  <span className="muted block text-[13px]">{k === "fix" ? "Keeps their pass for 2 more hours and emails a link to send the right UTR or screenshot." : k === "reject" ? "Frees the pass and closes the order." : "Frees the pass, closes the order and adds the buyer to the Refunds tab."}</span></span>
+              </label>
+            ))}
+          </fieldset>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor={`wm-${r.id}`} className="text-sm font-medium">WhatsApp message (edit it here)</label>
+            <textarea id={`wm-${r.id}`} className="field min-h-32 w-full" value={tpl} onChange={(e) => { setDraft(e.target.value); setSaved(false); }} disabled={busy} />
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Insert a placeholder">
+              {WA_PLACEHOLDERS.map((f) => <button key={f} type="button" className="btn btn-quiet btn-calm min-h-11 px-3 text-[13px]" onClick={() => setDraft(`${tpl}${tpl && !/\s$/.test(tpl) ? " " : ""}[${f}]`)} disabled={busy}>[{f}]</button>)}
+            </div>
+            <p className="label mt-1">What {r.buyerName.split(/\s+/)[0]} will receive</p>
+            <p className="card-plain whitespace-pre-wrap p-3 text-sm" aria-live="polite">{waText(tpl, r, reason)}</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" className="btn btn-quiet btn-calm min-h-11 px-4 text-sm" onClick={savePreset} disabled={busy || saving || !dirty} aria-busy={saving}>{saving && <span className="spinner" aria-hidden="true" />}{saving ? "Saving…" : saved ? "Saved ✓" : "Save as my default for this option"}</button>
+              {draft !== null && dirty && <button type="button" className="muted inline-flex min-h-11 items-center text-sm hover:text-fg" onClick={() => setDraft(null)}>Undo changes</button>}
+            </div>
+            <p className="muted text-[13px]">Saving updates the preset for every payment, for all admins. Without saving, your edit is used for this buyer only.</p>
+          </div>
+
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+            <input type="checkbox" checked={sendWa} onChange={(e) => setSendWa(e.target.checked)} disabled={busy} />
+            Open WhatsApp with this message after rejecting
+          </label>
           <div className="flex flex-wrap gap-3">
-            <button className="btn btn-primary btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(true)}>Ask to fix &amp; resubmit</button>
-            <button className="btn btn-quiet btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(false)}>Reject, no money received</button>
-            <button className="btn btn-quiet btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={() => reject(false, true)}>Reject &amp; refund (money received)</button>
+            <button className="btn btn-primary btn-calm min-h-12 flex-1" disabled={busy || reason.trim().length < 3} onClick={reject} aria-busy={busy}>
+              {busy && <span className="spinner" aria-hidden="true" />}{busy ? "Working…" : kind === "fix" ? "Ask to fix & resubmit" : kind === "reject" ? "Reject, no money received" : "Reject & refund"}
+            </button>
             <button className="btn btn-quiet btn-calm min-h-12" onClick={() => setMode("idle")} disabled={busy}>Back</button>
           </div>
-          <p className="muted text-[13px]"><strong className="text-fg">Fix &amp; resubmit</strong> keeps their pass for 2 more hours and emails them a link to send the right UTR or screenshot. <strong className="text-fg">Reject, no money received</strong> frees the pass and closes the order. <strong className="text-fg">Reject &amp; refund</strong> does the same but adds the buyer to the Refunds tab, so you can pay them back and keep the count.</p>
         </div>
       )}
     </article>

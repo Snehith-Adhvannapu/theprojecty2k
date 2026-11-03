@@ -62,7 +62,7 @@ export const eventConfig = {
     accountNote: process.env.NEXT_PUBLIC_UPI_NOTE || "",
     reviewHoldHours: 24,
   },
-  limits: { maxPassesPerOrder: 15, holdMinutes: 15, maxPendingPerPhone: 2 },
+  limits: { maxPassesPerOrder: 15, holdMinutes: 20, maxPendingPerPhone: 2 },
 };
 
 export const isPlaceholder = (s: string) => /\[[^\]]+\]/.test(s);

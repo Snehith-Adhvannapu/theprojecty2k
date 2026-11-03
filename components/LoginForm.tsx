@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Tip } from "@/components/Tip";
 
 export function LoginForm({ next }: { next?: string }) {
   const router = useRouter();
@@ -35,7 +36,7 @@ export function LoginForm({ next }: { next?: string }) {
         <input id="email" type="email" className="field" autoComplete="username" autoCapitalize="none" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium">Password</label>
+        <label htmlFor="password" className="flex items-center gap-1.5 text-sm font-medium">Password<Tip text="Use the login an admin gave you. Forgot it? Ask an admin to set a new password for you in Admin, Volunteers." /></label>
         <input id="password" type="password" className="field" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       {msg && <p role="alert" className="rounded-sm border border-danger p-3 text-sm">{msg}</p>}

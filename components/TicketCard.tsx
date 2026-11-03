@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { eventConfig as e } from "@/config/event";
 import { TicketQR } from "@/components/TicketQR";
+import { Tip } from "@/components/Tip";
 
 export interface TicketCardData {
   token: string; shortCode: string; admits: number; passName: string; holderName: string;
@@ -21,7 +22,7 @@ export function TicketCard({ t, delay = 0 }: { t: TicketCardData; delay?: number
             <p className="muted text-[13px]">{t.passName}</p>
             <p className="mt-0.5 truncate text-lg font-semibold">{t.holderName}</p>
           </div>
-          <p className="shrink-0 whitespace-nowrap text-right font-display leading-[0.9] tracking-[0.02em]"><span className="block text-[13px] tracking-[0.2em] text-muted">ADMITS</span><span className="text-[64px]">{t.admits}</span></p>
+          <p className="shrink-0 whitespace-nowrap text-right font-display leading-[0.9] tracking-[0.02em]"><span className="flex items-center justify-end gap-1.5 text-[13px] tracking-[0.2em] text-muted">ADMITS<Tip text="How many people this one ticket lets in." /></span><span className="text-[64px]">{t.admits}</span></p>
         </div>
         <p className="muted mt-3 text-[13px]">{e.venue.name}, {e.venue.address} · Doors {e.doorsOpen}</p>
         <a href={e.venue.mapUrl} target="_blank" rel="noopener noreferrer" className="btn btn-calm btn-quiet mt-3 min-h-11 w-full">Get directions (Google Maps)</a>
@@ -31,7 +32,7 @@ export function TicketCard({ t, delay = 0 }: { t: TicketCardData; delay?: number
         {t.status === "revoked" && <Banner>Cancelled / refunded. This ticket will not be accepted.</Banner>}
         {t.status === "used" && <Banner>Already used{t.usedAtLabel ? ` at ${t.usedAtLabel}` : ""}.</Banner>}
         <div className="text-center">
-          <p className="label">Short code</p>
+          <p className="label flex items-center justify-center gap-1.5">Short code<Tip text="If the QR won't scan, read this code to the volunteer at the door. Keep your ticket private: each QR works only once." /></p>
           <p className="tnum mt-1 text-[28px] font-semibold tracking-[0.18em]">{t.shortCode}</p>
         </div>
       </div>

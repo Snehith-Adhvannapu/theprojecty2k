@@ -7,6 +7,7 @@ import { PaymentProof } from "@/components/PaymentProof";
 import { rememberOrder } from "@/lib/myOrders";
 import { paise } from "@/lib/normalize";
 import { HelpWhatsApp } from "./HelpWhatsApp";
+import { Tip } from "@/components/Tip";
 
 interface T { token: string; shortCode: string; admits: number; passName: string; holderName: string; status: string }
 interface S { emailMasked: string; status: "pending" | "awaiting_review" | "rejected" | "paid" | "expired" | "needs_refund" | "refunded"; amountPaise: number; expiresAt: string; reviewNote: string | null; tickets: T[] }
@@ -111,7 +112,7 @@ export function OrderStatus({ orderId, whatsapp }: { orderId: string; whatsapp: 
             </li>
           ))}
         </ol>
-        <p className="muted mt-4 text-sm">Order reference <span className="tnum text-fg">{ref}</span> · {paise(s.amountPaise)}</p>
+        <p className="muted mt-4 flex items-center gap-1.5 text-sm">Order reference <span className="tnum text-fg">{ref}</span> · {paise(s.amountPaise)}<Tip text="Quote this reference if you WhatsApp us, so we can find your order quickly." /></p>
         {offline && <p className="mt-3 text-sm text-danger">You seem to be offline. Reconnecting…</p>}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link href="/find-ticket" className="btn btn-calm btn-quiet min-h-12 flex-1">My tickets</Link>

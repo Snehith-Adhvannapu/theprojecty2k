@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { eventConfig as e } from "@/config/event";
 import { paise } from "@/lib/normalize";
 import { HelpWhatsApp } from "./HelpWhatsApp";
+import { Tip } from "@/components/Tip";
 
 const MAX_SIDE = 1100;
 const MAX_BYTES = 1_400_000;
@@ -113,7 +114,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
   return (
     <div className="slide-up mt-6">
       <h1 className="text-[26px] leading-tight">Pay {paise(amountPaise)} by UPI</h1>
-      <p className="muted mt-2 text-sm">Your pass is held for <span className="tnum text-fg">{left}</span>. Pay the exact amount, then send us the proof below.</p>
+      <p className="muted mt-2 flex flex-wrap items-center gap-x-1.5 text-sm">Your pass is held for <span className="tnum text-fg">{left}</span>. Pay the exact amount, then send us the proof below.<Tip text={`We reserve your pass for ${e.limits.holdMinutes} minutes so nobody else takes it while you pay. If the time runs out, the pass goes back on sale. Already paid late? You can still send proof if passes are left, or tap Having trouble? at the bottom.`} /></p>
 
       {note && (
         <div role="alert" className="mt-4 rounded-sm border border-blood bg-[var(--selected)] p-4">
@@ -136,7 +137,7 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
               <button type="button" className="btn btn-quiet btn-calm min-h-11 shrink-0 px-4 text-sm" onClick={copy}>{copied ? "Copied" : "Copy"}</button>
             </div>
             <p className="tnum mt-3 text-2xl font-semibold">{paise(amountPaise)}</p>
-            <p className="muted text-[13px]">Pay exactly this amount. Reference: {ref}</p>
+            <p className="muted flex items-center gap-1.5 text-[13px]">Pay exactly this amount. Reference: {ref}<Tip text="Your order reference. Add it as the payment note if your UPI app allows. It helps us find your payment. It is not the UTR." /></p>
             <a href={link} className="btn btn-primary btn-calm btn-block mt-4 sm:hidden">Open my UPI app</a>
           </div>
         </div>
@@ -155,13 +156,13 @@ export function PaymentProof({ orderId, amountPaise, expiresAt, note, onSubmitte
         <p className="label">Step 2 · Send proof</p>
         <div className="mt-4 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="utr" className="text-sm font-medium">UTR / UPI reference number</label>
+            <label htmlFor="utr" className="flex items-center gap-1.5 text-sm font-medium">UTR / UPI reference number<Tip text="A 12-digit number your UPI app shows after you pay. Open the payment in your app and look for UTR, UPI Ref No. or Transaction ID. It is not your phone number or the order reference." /></label>
             <input id="utr" className="field tnum" inputMode="numeric" autoComplete="off" maxLength={12} placeholder="12 digits" value={utr}
               onChange={(ev) => { setUtr(ev.target.value.replace(/\D/g, "")); setErr(""); }} disabled={busy} aria-invalid={phase === "error" && !/^\d{12}$/.test(utr)} />
             <p className="muted text-[13px]">Find it in your UPI app under the payment details (it may be called UTR, UPI Ref No. or Transaction ID).</p>
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium" id="shot-l">Payment screenshot</span>
+            <span className="flex items-center gap-1.5 text-sm font-medium" id="shot-l">Payment screenshot<Tip text="A screenshot of the payment success screen in your UPI app. It should clearly show the amount, the date and the UTR." /></span>
             <input ref={input} type="file" accept="image/*" className="sr-only" aria-labelledby="shot-l" tabIndex={-1}
               onChange={(ev) => { const f = ev.target.files?.[0] ?? null; setFile(f); setErr(""); packed.current = f ? compress(f) : null; packed.current?.catch(() => {}); }} disabled={busy} />
             <button type="button" className="btn btn-quiet btn-calm min-h-12 justify-center" onClick={() => input.current?.click()} disabled={busy} aria-describedby="shot-l">

@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { paise } from "@/lib/normalize";
+import { Tip } from "@/components/Tip";
 
 interface Pass {
   id: string; name: string; description: string; pricePaise: number; feePaise: number;
@@ -92,7 +93,7 @@ export function PassPicker() {
         <p>
           {sel ? (
             <>
-              Selected: <strong className="font-semibold">{sel.name}</strong> · Admits {sel.admits} · {paise(sel.pricePaise)}
+              Selected: <strong className="font-semibold">{sel.name}</strong> · Admits {sel.admits} · {paise(sel.pricePaise)}{" "}<Tip text="Admits shows how many people one ticket lets in. A couple pass admits 2 on one QR code. You choose how many tickets on the next page." />
             </>
           ) : (
             "Pick a pass to continue."

@@ -3,6 +3,7 @@
 // connection (never red or green, and nobody is admitted), blue is reserved for offline
 // local mode. The server decides every scan; the browser only displays the verdict.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Tip } from "@/components/Tip";
 import { formatTimeIST } from "@/lib/time";
 
 type Verdict =
@@ -234,6 +235,7 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
             <p className="muted text-center text-[13px] tnum" aria-live="polite">
               {stats ? `Checked in ${stats.checkedIn} of ${stats.expected}` : "Loading count…"}
             </p>
+            <p className="muted flex items-center justify-center gap-1.5 text-center text-[13px]">What do the colours mean?<Tip label="What do the colours mean?" text="Green ADMIT: let them in and check the name on their ID. Red: do not admit (already used, cancelled or not a real ticket). Amber NO CONNECTION: not admitted yet, wait for it to retry. Blue: admitted while offline." /></p>
           </div>
         </>
       ) : (
@@ -266,7 +268,7 @@ function Lookup({ onBack, onAdmit }: { onBack: () => void; onAdmit: (g: Guest) =
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between border-b border-line px-3.5 py-1 text-[13px]">
-        <span className="font-semibold">Find guest</span>
+        <span className="flex items-center gap-1.5 font-semibold">Find guest<Tip text="Use this when a QR won't scan or a guest lost their ticket. Search by name, phone last 4 digits or short code, check their photo ID, then admit." /></span>
         <button onClick={onBack} className="muted inline-flex min-h-11 items-center">← Camera</button>
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3.5">

@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
+import { Tip } from "@/components/Tip";
 import { paise } from "@/lib/normalize";
 import { formatTimeIST } from "@/lib/time";
 import { api } from "./api";
@@ -11,6 +12,20 @@ import { Refunds } from "./Refunds";
 
 const TABS = ["Overview", "Payments", "Contacts", "Refunds", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools"] as const;
 type Tab = (typeof TABS)[number];
+
+const TAB_HELP: Record<Tab, string> = {
+  Overview: "A quick look at sales, check-ins, money and anything that needs you.",
+  Payments: "Buyers who paid and sent proof. Check your bank statement, then approve or reject.",
+  Contacts: "Everyone who started an order, paid or not. Message them on WhatsApp, call them, or export the list.",
+  Refunds: "Who should get money back, who already has, and how it was sent.",
+  "Page text": "Change any wording on the public landing page.",
+  Guests: "Everyone holding a ticket. Search a guest or resend their ticket email.",
+  Passes: "The kinds of ticket you sell: price, how many exist, and whether they are on sale.",
+  Volunteers: "Staff logins. Volunteers can only scan tickets; admins can do everything.",
+  "Check-ins": "The latest scans at the door, including refused ones.",
+  Activity: "A log of every staff action, so you can see who did what.",
+  Tools: "Exports, a printable guest list, and free (comp) tickets.",
+};
 
 interface Summary {
   counts: { sold: number; capacity: number; held: number; left: number; comps: number; checked_in_tickets: number; checked_in_people: number; people_expected: number };
@@ -43,7 +58,8 @@ export function AdminApp({ name, initialTab, focusOrder }: { name: string; initi
               className={`min-h-12 shrink-0 border-b-2 px-1 text-sm transition-colors ${tab === t ? "border-crimson" : "muted border-transparent hover:text-fg"}`}>{t}</button>
           ))}
         </nav>
-        <div className="slide-up mt-5" key={tab}>
+        <p className="muted mt-4 text-sm">{TAB_HELP[tab]}</p>
+        <div className="slide-up mt-4" key={tab}>
           {tab === "Overview" && <Overview go={setTab} />}
           {tab === "Payments" && <Payments focusOrder={focusOrder} />}
           {tab === "Contacts" && <Contacts />}
@@ -72,8 +88,8 @@ function useLoad<T>(url: string) {
 }
 
 const Err = ({ m }: { m: string }) => (m ? <p role="alert" className="mt-3 rounded-sm border border-danger p-3 text-sm">{m}</p> : null);
-const Stat = ({ k, v }: { k: string; v: React.ReactNode }) => (
-  <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label">{k}</p><p className="tnum mt-1.5 text-[32px] font-semibold">{v}</p></div>
+const Stat = ({ k, v, tip }: { k: string; v: React.ReactNode; tip?: string }) => (
+  <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label flex items-center gap-1.5">{k}{tip && <Tip text={tip} />}</p><p className="tnum mt-1.5 text-[32px] font-semibold">{v}</p></div>
 );
 
 function Overview({ go }: { go: (t: Tab) => void }) {
@@ -91,15 +107,15 @@ function Overview({ go }: { go: (t: Tab) => void }) {
         </section>
       )}
       <section aria-label="Counts" className="flex flex-wrap gap-3">
-        <Stat k="Tickets sold" v={s.counts.sold} />
-        <Stat k="Still available" v={s.counts.left} />
-        <Stat k="Checked in (people)" v={`${s.counts.checked_in_people}/${s.counts.people_expected}`} />
-        <Stat k="Pending orders" v={s.health.pending_orders} />
+        <Stat k="Tickets sold" v={s.counts.sold} tip="Tickets that have been paid for and approved by an admin. Orders still waiting for payment or review are not counted." />
+        <Stat k="Still available" v={s.counts.left} tip="Passes you can still sell: total minus sold, minus seats temporarily held by buyers who haven't paid yet. Held seats come back automatically if the buyer doesn't send proof in time." />
+        <Stat k="Checked in (people)" v={`${s.counts.checked_in_people}/${s.counts.people_expected}`} tip="People scanned in at the door, out of everyone expected. A couple pass counts as 2 people." />
+        <Stat k="Pending orders" v={s.health.pending_orders} tip="Buyers who chose a pass and are still inside their hold time but haven't sent a UTR and screenshot yet. Nothing to do for these." />
       </section>
       <section aria-label="Collections" className="card-plain p-5">
         <div className="flex flex-wrap gap-x-10 gap-y-5">
-          {([["Collected (tickets)", s.money.gross], ["Refunded", s.money.refunds], ["Still to refund", s.money.owed]] as const).map(([k, v]) => (
-            <div key={k}><p className="label">{k}</p><p className="tnum mt-1 text-2xl font-semibold">{paise(v)}</p></div>
+          {([["Collected (tickets)", s.money.gross, "Money from approved UPI payments, one entry per issued ticket. Compare it with your bank statement."], ["Refunded", s.money.refunds, "Money you have already sent back and marked as refunded."], ["Still to refund", s.money.owed, "Money buyers paid that you still need to send back (people who paid but won't get a ticket)."]] as const).map(([k, v, t]) => (
+            <div key={k}><p className="label flex items-center gap-1.5">{k}<Tip text={t} /></p><p className="tnum mt-1 text-2xl font-semibold">{paise(v)}</p></div>
           ))}
         </div>
         <p className="muted mt-4 text-[13px]">Collected = approved UPI payments (tickets issued). Money you should be holding for this event ≈ collected + still to refund. Comp tickets ({s.counts.comps}) carry no money. Refunds are sent from your UPI app, then marked here.</p>
@@ -135,7 +151,7 @@ function Guests() {
   return (
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h2 className="text-lg">Guests</h2>
+        <h2 className="flex items-center gap-1.5 text-lg">Guests<Tip text="Every issued ticket. Short code: the code printed under the QR; a volunteer can type it if the QR won't scan. Valid = not used yet. Used = already scanned in." /></h2>
         <div className="flex max-w-[520px] flex-[1_1_320px] flex-col gap-1.5">
           <label htmlFor="a-q" className="muted text-[13px]">Search name, phone, ticket ID, short code or Instagram</label>
           <input id="a-q" type="search" className="field" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" />
@@ -161,7 +177,7 @@ function Guests() {
       {/* Desktop: table. */}
       <div className="mt-4 hidden overflow-x-auto rounded-sm border border-line md:block">
         <table className="w-full border-collapse text-sm">
-          <thead><tr className="bg-card text-left text-muted">{["Name", "Code", "Pass", "Phone", "Instagram", "Status", "Actions"].map((h) => <th key={h} scope="col" className="px-4 py-3 font-medium">{h}</th>)}</tr></thead>
+          <thead><tr className="bg-card text-left text-muted">{["Name", "Code", "Pass", "Phone", "Instagram", "Status", "Actions"].map((h) => <th key={h} scope="col" className="px-4 py-3 font-medium">{h === "Code" ? <span className="inline-flex items-center gap-1.5">{h}<Tip text="The short code under the ticket's QR. If a QR won't scan, the volunteer can find the guest with this." /></span> : h === "Actions" ? <span className="inline-flex items-center gap-1.5">{h}<Tip text="Resend email sends the ticket link to the buyer again. Use it if they say they never got it." /></span> : h}</th>)}</tr></thead>
           <tbody>
             {data?.map((g) => (
               <tr key={g.id} className="border-t border-line align-top">
@@ -190,7 +206,7 @@ function Passes() {
   const [msg, setMsg] = useState("");
   return (
     <section>
-      <h2 className="text-lg">Passes</h2>
+      <h2 className="flex items-center gap-1.5 text-lg">Passes<Tip text="Each row is one kind of ticket. Change the numbers and press Save. Buyers see the new price and availability within a few seconds." /></h2>
       <p className="muted mt-1 text-sm">Pick one admission (admits 1) or a couple pass (admits 2: one QR, one scan). Prices in rupees.</p>
       <Err m={err} />{msg && <p role="status" className="mt-3 text-sm">{msg}</p>}
       <div className="mt-4 flex flex-col gap-3">
@@ -222,18 +238,18 @@ function PassRow({ p, fresh, onSaved }: { p: Pass; fresh?: boolean; onSaved: (m:
   return (
     <div className={`card-plain flex flex-wrap items-end gap-3 p-4 ${fresh ? "border-dashed" : ""}`}>
       <div className={`${cell} min-w-[180px] flex-[2]`}><label className="label">{fresh ? "New pass name" : "Name"}</label><input className="field" value={f.name} onChange={set("name")} /></div>
-      <div className={`${cell} min-w-[120px] flex-1`}><label className="label">Price ₹</label><input className="field" inputMode="decimal" value={f.price} onChange={set("price")} /></div>
-      <div className={`${cell} min-w-[100px] flex-1`}><label className="label">Fee ₹</label><input className="field" inputMode="decimal" value={f.fee} onChange={set("fee")} /></div>
-      <div className={`${cell} min-w-[100px] flex-1`}><label className="label">Total qty</label><input className="field" inputMode="numeric" value={f.total} onChange={set("total")} /></div>
+      <div className={`${cell} min-w-[120px] flex-1`}><label className="label flex items-center gap-1.5">Price ₹<Tip text="What one pass costs, in rupees." /></label><input className="field" inputMode="decimal" value={f.price} onChange={set("price")} /></div>
+      <div className={`${cell} min-w-[100px] flex-1`}><label className="label flex items-center gap-1.5">Fee ₹<Tip text="An extra charge added to each pass on top of the price. Leave 0 for none." /></label><input className="field" inputMode="decimal" value={f.fee} onChange={set("fee")} /></div>
+      <div className={`${cell} min-w-[100px] flex-1`}><label className="label flex items-center gap-1.5">Total qty<Tip text="How many of this pass you will sell in total, including ones already sold. Raise it to sell more, lower it to stop earlier. The line below shows sold, held and left." /></label><input className="field" inputMode="numeric" value={f.total} onChange={set("total")} /></div>
       <div className="flex basis-full flex-wrap items-center gap-2" role="group" aria-label="Change total quantity">
         {[-10, -1, 1, 10].map((d) => (
           <button key={d} type="button" className="btn btn-quiet btn-calm min-h-11 px-4 text-sm tnum" onClick={() => setF({ ...f, total: String(Math.max(0, (parseInt(f.total || "0", 10) || 0) + d)) })}>{d > 0 ? `+${d}` : d}</button>
         ))}
         {!fresh && <span className="muted text-sm tnum">{p.sold} sold · {p.held ?? 0} held · {Math.max(0, (parseInt(f.total || "0", 10) || 0) - p.sold - (p.held ?? 0))} left. Save to apply.</span>}
       </div>
-      <div className={`${cell} min-w-[90px] flex-1`}><label className="label">Admits</label><input className="field" inputMode="numeric" value={f.admits} onChange={set("admits")} /></div>
+      <div className={`${cell} min-w-[90px] flex-1`}><label className="label flex items-center gap-1.5">Admits<Tip text="How many people one ticket lets in. 1 = a single pass. 2 = a couple pass: one QR code that is scanned once for both people." /></label><input className="field" inputMode="numeric" value={f.admits} onChange={set("admits")} /></div>
       <div className={`${cell} basis-full`}><label className="label">Description</label><input className="field" value={f.description} onChange={set("description")} /></div>
-      <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--blood)]" checked={f.active} onChange={set("active")} /> On sale</label>
+      <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--blood)]" checked={f.active} onChange={set("active")} /> On sale <Tip text="Tick to show this pass on the website and let people buy it. Untick to hide it. Tickets already sold stay valid." /></label>
             <button className="btn btn-primary btn-calm ml-auto min-h-11 px-5 text-sm" onClick={save} disabled={state === "loading" || !f.name}>
         {state === "loading" && <span className="spinner" aria-hidden="true" />}{state === "ok" ? "Saved" : fresh ? "Add pass" : "Save"}
       </button>
@@ -276,7 +292,7 @@ function Volunteers() {
   return (
     <section className="flex flex-wrap gap-6">
       <div className="min-w-0 flex-[2_1_320px]">
-        <h2 className="text-lg">Staff accounts</h2><Err m={err} />{msg && <p role="alert" className="mt-3 rounded-sm border border-danger p-3 text-sm">{msg}</p>}
+        <h2 className="flex items-center gap-1.5 text-lg">Staff accounts<Tip text="People who can log in. A volunteer can only use the scanner and look up guests. An admin can approve payments, edit passes, and manage staff." /></h2><Err m={err} />{msg && <p role="alert" className="mt-3 rounded-sm border border-danger p-3 text-sm">{msg}</p>}
         {made && (
           <div role="status" className="mt-3 rounded-sm border border-line-strong p-4 text-sm">
             <p className="font-semibold">Share these privately. The password is shown only now.</p>
@@ -311,12 +327,12 @@ function Volunteers() {
           <div key={k} className="flex flex-col gap-1"><label className="label" htmlFor={`v-${k}`}>{k}</label>
             <input id={`v-${k}`} className="field" type={k === "email" ? "email" : "text"} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} autoComplete="off" /></div>
         ))}
-        <div className="flex flex-col gap-1"><label className="label" htmlFor="v-password">password</label>
+        <div className="flex flex-col gap-1"><label className="label flex items-center gap-1.5" htmlFor="v-password">password<Tip text="At least 10 characters. Generate makes an easy-to-read one. It is shown only once after you create the account, so copy it and send it privately." /></label>
           <div className="flex gap-2">
             <input id="v-password" className="field tnum min-w-0 flex-1" type="text" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} autoComplete="off" />
             <button type="button" className="btn btn-quiet btn-calm min-h-11 shrink-0 px-3 text-sm" onClick={() => setF({ ...f, password: genPassword() })}>Generate</button>
           </div></div>
-        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--blood)]" checked={f.role === "admin"} onChange={(e) => setF({ ...f, role: e.target.checked ? "admin" : "volunteer" })} /> Make admin (full access)</label>
+        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--blood)]" checked={f.role === "admin"} onChange={(e) => setF({ ...f, role: e.target.checked ? "admin" : "volunteer" })} /> Make admin (full access) <Tip text="Leave unticked for door staff. Admins can see payments, phone numbers and exports, so only tick this for people you fully trust." /></label>
         <button className="btn btn-primary btn-calm min-h-12" disabled={busy || !f.name || !f.email || f.password.length < 10}>{busy && <span className="spinner" aria-hidden="true" />}Create account</button>
         <p className="muted text-[13px]">Volunteers can only scan and look guests up. Password: at least 10 characters.</p>
       </form>
@@ -328,7 +344,7 @@ function Checkins() {
   const { data, err } = useLoad<{ at: string; outcome: string; method: string; mode: string; shortCode: string | null; name: string | null; staff: string }[]>("/api/admin/checkins");
   return (
     <section>
-      <h2 className="text-lg">Recent check-ins</h2><Err m={err} />
+      <h2 className="flex items-center gap-1.5 text-lg">Recent check-ins<Tip text="Newest scans first. Lines in red were refused: duplicate = that ticket was already used, invalid = no such ticket, revoked = cancelled or refunded." /></h2><Err m={err} />
       <ul className="card-plain mt-3 divide-y divide-line">
         {data?.map((c, i) => (
           <li key={i} className="flex justify-between gap-3 px-4 py-2.5 text-sm">
@@ -361,7 +377,7 @@ function Tools() {
   return (
     <section className="flex flex-wrap gap-6">
       <div className="card-plain min-w-[320px] flex-1 p-5">
-        <h2 className="text-lg">Export &amp; print</h2>
+        <h2 className="flex items-center gap-1.5 text-lg">Export &amp; print<Tip text="Excel (.xlsx) opens in Excel or Google Sheets. CSV is a plain file that opens anywhere. Print guest list makes a paper copy for the door in case phones fail." /></h2>
         <div className="mt-4 flex flex-wrap gap-3">
           <a className={dl} href="/api/admin/export?kind=attendees&format=xlsx">Attendees .xlsx</a>
           <a className={dl} href="/api/admin/export?kind=attendees&format=csv">Attendees .csv</a>
@@ -372,7 +388,7 @@ function Tools() {
         <p className="muted mt-4 text-[13px]">Exports contain full phone numbers and emails and are logged. Keep a copy on two admin phones before the event.</p>
       </div>
       <form onSubmit={issue} className="card-plain flex min-w-[320px] flex-1 flex-col gap-3 p-5">
-        <h2 className="text-lg">Issue comp ticket</h2>
+        <h2 className="flex items-center gap-1.5 text-lg">Issue comp ticket<Tip text="A free ticket you create yourself, for a guest, a friend or someone who paid you another way. It takes seats from the pass you choose, and it is recorded in the Activity log with your reason." /></h2>
         <p className="muted text-sm">For guests who paid by other means. A reason is required and written to the audit log.</p>
         <div className="flex flex-col gap-1"><label className="label" htmlFor="c-pass">Pass</label>
           <select id="c-pass" className="field" value={c.passTypeId} onChange={(e) => setC({ ...c, passTypeId: e.target.value })}>

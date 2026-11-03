@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Tip } from "@/components/Tip";
 
 export function FindTicketForm() {
   const [contact, setContact] = useState("");
@@ -24,7 +25,7 @@ export function FindTicketForm() {
   return (
     <form onSubmit={submit} noValidate className="mt-4 flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="contact" className="text-sm font-medium">Email or mobile number used to buy</label>
+        <label htmlFor="contact" className="flex items-center gap-1.5 text-sm font-medium">Email or mobile number used to buy<Tip text="Enter the same email or phone number you gave at checkout. We email your ticket link only to the address on the order, so it is safe to try." /></label>
         <input id="contact" className="field" value={contact} onChange={(e) => { setContact(e.target.value); if (state !== "loading") setState("idle"); }}
           autoComplete="email" inputMode="email" placeholder="you@example.com or 98765 43210" aria-invalid={state === "error"} />
       </div>

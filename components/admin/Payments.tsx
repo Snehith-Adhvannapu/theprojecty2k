@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { paise } from "@/lib/normalize";
 import { formatFullIST } from "@/lib/time";
 import { api } from "./api";
+import { Tip } from "@/components/Tip";
 import { fillWa, WA_DEFAULTS, WA_KINDS, WA_LABEL, WA_PLACEHOLDERS, type WaKind, type WaTemplates } from "@/lib/wa-fill";
 
 interface Row {
@@ -37,6 +38,7 @@ function Contact({ r }: { r: Row }) {
     <div className="flex flex-wrap gap-3">
       <a className="btn btn-quiet btn-calm min-h-11 flex-1 sm:flex-none sm:px-5" href={`tel:${r.buyerPhone}`}>Call buyer</a>
       <a className="btn btn-quiet btn-calm min-h-11 flex-1 sm:flex-none sm:px-5" href={waConfirm(r.buyerPhone, r.buyerName, r.amountPaise, r.utr)} target="_blank" rel="noreferrer">WhatsApp to confirm</a>
+      <span className="flex items-center"><Tip text="Not sure the payment is genuine? Call or WhatsApp the buyer first and ask them to confirm. Nothing is changed by these buttons." /></span>
     </div>
   );
 }
@@ -70,7 +72,7 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-lg">To verify <span className="muted tnum">({q.pending.length})</span></h2>
+        <h2 className="flex items-center gap-1.5 text-lg">To verify <span className="muted tnum">({q.pending.length})</span><Tip text="Buyers who paid and sent a UTR (12-digit UPI reference) and a screenshot. Open your bank statement and look for that exact UTR and amount before you approve." /></h2>
         <button className="muted inline-flex min-h-11 items-center text-sm hover:text-fg" onClick={load}>Refresh</button>
       </div>
       {q.pending.length === 0 && <p className="card-plain muted p-5 text-sm">Nothing waiting. New payments show up here as soon as buyers submit their UTR.</p>}
@@ -78,7 +80,7 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
 
       {q.reviewed.length > 0 && (
         <section className="mt-4">
-          <h2 className="text-lg">Reviewed</h2>
+          <h2 className="flex items-center gap-1.5 text-lg">Reviewed<Tip text="Payments you already approved or rejected. If you rejected someone by mistake, use Change to approved. If their money did arrive, use Money received? Refund." /></h2>
           <ul className="card-plain mt-3 divide-y divide-line">
             {q.reviewed.map((r) => (
               <li key={r.id} id={`pay-${r.id}`} className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm ${r.id === focusOrder ? "bg-[var(--selected)]" : ""}`}>
@@ -114,7 +116,7 @@ function Owe({ r, done }: { r: Row; done: () => void }) {
     setBusy(true); setMsg("");
     try { await api(`/api/admin/orders/${r.id}/refund-owed`, {}); await done(); } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); setBusy(false); }
   }
-  return <span className="flex flex-col items-end"><button className="inline-flex min-h-11 items-center border-b border-blood" onClick={go} disabled={busy}>Money received? Refund</button>{msg && <span role="alert" className="text-[13px] text-crimson">{msg}</span>}</span>;
+  return <span className="flex flex-col items-end"><span className="inline-flex items-center gap-1.5"><button className="inline-flex min-h-11 items-center border-b border-blood" onClick={go} disabled={busy}>Money received? Refund</button><Tip text="Use this if you rejected someone but their money did reach your bank. It puts them on the Refunds list so you remember to pay them back." /></span>{msg && <span role="alert" className="text-[13px] text-crimson">{msg}</span>}</span>;
 }
 
 /** Change a rejection to approved after the buyer confirmed. Issues and emails the ticket. */
@@ -131,7 +133,7 @@ function Reverse({ r, done }: { r: Row; done: () => void }) {
   }
   if (step === "idle") return (
     <span className="flex flex-col items-end">
-      <button className="inline-flex min-h-11 items-center border-b border-blood font-medium" onClick={() => setStep("confirm")}>Change to approved</button>
+      <span className="inline-flex items-center gap-1.5"><button className="inline-flex min-h-11 items-center border-b border-blood font-medium" onClick={() => setStep("confirm")}>Change to approved</button><Tip text="Use this if you rejected someone but they have since proved they paid. It issues their ticket and emails it." /></span>
       {msg && <span role="alert" className="text-[13px] text-crimson">{msg}</span>}
     </span>
   );
@@ -197,7 +199,7 @@ function Pending({ r, done, focus, tpls, onSaved }: { r: Row; done: () => void; 
           <p className="mt-3 text-lg font-semibold">{r.buyerName}</p>
           <p className="muted text-sm">{r.items}</p>
           <p className="muted mt-1 text-sm">{r.buyerPhone} · {r.buyerEmail}</p>
-          <p className="label mt-4">UTR</p>
+          <p className="label mt-4 flex items-center gap-1.5">UTR<Tip text="The 12-digit reference the buyer copied from their UPI app. It is unique to one payment. Search your bank statement for it." /></p>
           <p className="tnum select-all text-xl font-semibold tracking-wider">{r.utr}</p>
           {r.submittedAt && <p className="muted mt-1 text-[13px]">Submitted {formatFullIST(r.submittedAt)}</p>}
         </div>
@@ -238,7 +240,7 @@ function Pending({ r, done, focus, tpls, onSaved }: { r: Row; done: () => void; 
           <input id={`rr-${r.id}`} className="field" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Or type your own reason" disabled={busy} />
 
           <fieldset className="flex flex-col gap-2" disabled={busy}>
-            <legend className="text-sm font-medium">What happens</legend>
+            <legend className="flex items-center gap-1.5 text-sm font-medium">What happens<Tip text="Pick what to do with this payment. The message below changes to match, and the buyer is also emailed." /></legend>
             {WA_KINDS.map((k) => (
               <label key={k} className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-sm border p-3 text-sm ${kind === k ? "border-crimson" : "border-line"}`}>
                 <input type="radio" name={`k-${r.id}`} className="mt-1" checked={kind === k} onChange={() => pick(k)} />
@@ -249,7 +251,7 @@ function Pending({ r, done, focus, tpls, onSaved }: { r: Row; done: () => void; 
           </fieldset>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor={`wm-${r.id}`} className="text-sm font-medium">WhatsApp message (edit it here)</label>
+            <label htmlFor={`wm-${r.id}`} className="flex items-center gap-1.5 text-sm font-medium">WhatsApp message (edit it here)<Tip text="Words in [square brackets] are replaced with this buyer's details. Edit freely for this one buyer, or press Save to change the default for everyone." /></label>
             <textarea id={`wm-${r.id}`} className="field min-h-32 w-full" value={tpl} onChange={(e) => { setDraft(e.target.value); setSaved(false); }} disabled={busy} />
             <div className="flex flex-wrap gap-2" role="group" aria-label="Insert a placeholder">
               {WA_PLACEHOLDERS.map((f) => <button key={f} type="button" className="btn btn-quiet btn-calm min-h-11 px-3 text-[13px]" onClick={() => setDraft(`${tpl}${tpl && !/\s$/.test(tpl) ? " " : ""}[${f}]`)} disabled={busy}>[{f}]</button>)}

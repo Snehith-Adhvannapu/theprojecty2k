@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Tip } from "@/components/Tip";
 import { rememberOrder } from "@/lib/myOrders";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -128,7 +129,7 @@ export function CheckoutForm() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-lg font-semibold">{pass.name}</p>
-              <p className="muted mt-1 text-sm">Admits {pass.admits} · {paise(pass.pricePaise)} each</p>
+              <p className="muted mt-1 flex items-center gap-1.5 text-sm">Admits {pass.admits} · {paise(pass.pricePaise)} each<Tip text={pass.admits > 1 ? `One ticket lets ${pass.admits} people in. You get one QR code, and it is scanned once at the door for everyone on it.` : "One ticket lets one person in. Buying 2 gives you 2 separate tickets."} /></p>
             </div>
             <div className="flex items-center gap-1" role="group" aria-label="Quantity">
               <button type="button" className="btn btn-quiet btn-calm size-11 min-h-11 p-0 text-xl" aria-label="Fewer passes" disabled={qty <= 1 || busy} onClick={() => setQty(qty - 1)}>−</button>
@@ -145,9 +146,9 @@ export function CheckoutForm() {
           <h2 id="h-details" className="label">Your details</h2>
           <p className="muted mt-2 text-sm">One set of details covers the whole order. Your ticket and receipt go to this email.</p>
           <div className="mt-4 flex flex-col gap-4">
-            <Input id="f-name" label="Full name" err={errs.name} value={f.name} onChange={set("name")} disabled={busy} autoComplete="name" placeholder="As on your ID" />
+            <Input id="f-name" label="Full name" tip="Write your name exactly as on your photo ID. It is printed on your ticket and checked at the door." err={errs.name} value={f.name} onChange={set("name")} disabled={busy} autoComplete="name" placeholder="As on your ID" />
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="f-phone" className="text-sm font-medium">Phone number</label>
+              <label htmlFor="f-phone" className="flex items-center gap-1.5 text-sm font-medium">Phone number<Tip text="A 10-digit Indian mobile number. We may WhatsApp you about your order, and staff use it to find you at the door if you lose your ticket." /></label>
               <div className="flex gap-2">
                 <span className="field flex !w-16 shrink-0 items-center justify-center text-muted">+91</span>
                 <input id="f-phone" className="field min-w-0 flex-1" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="10-digit mobile"
@@ -155,16 +156,16 @@ export function CheckoutForm() {
               </div>
               <p id="phone-help" className={errs.phone ? "field-error" : "muted text-[13px]"}>{errs.phone ?? "Used for event updates and to find you at the door."}</p>
             </div>
-            <Input id="f-email" label="Email" type="email" err={errs.email} value={f.email} onChange={set("email")} disabled={busy} autoComplete="email" placeholder="you@example.com" />
-            <Input id="f-ig" label="Instagram handle" err={errs.instagram} value={f.instagram} onChange={set("instagram")} disabled={busy} autoComplete="off" autoCapitalize="none" placeholder="@yourhandle" />
+            <Input id="f-email" label="Email" tip="Your ticket is emailed here as a PDF once your payment is verified. Check the spelling, and look in spam if it doesn't arrive." type="email" err={errs.email} value={f.email} onChange={set("email")} disabled={busy} autoComplete="email" placeholder="you@example.com" />
+            <Input id="f-ig" label="Instagram handle" tip="Your Instagram username, with or without the @. A link to your profile also works." err={errs.instagram} value={f.instagram} onChange={set("instagram")} disabled={busy} autoComplete="off" autoCapitalize="none" placeholder="@yourhandle" />
           </div>
         </section>
 
         <section aria-labelledby="h-sum" className="mt-8">
-          <h2 id="h-sum" className="label">Order summary</h2>
+          <h2 id="h-sum" className="label flex items-center gap-1.5">Order summary<Tip text="Nothing is charged on this page. Next you will pay by UPI in your own app, then send us the proof." /></h2>
           <div className="card tnum mt-3 flex flex-col gap-3 p-5">
             <div className="flex justify-between gap-4"><span>{pass.name} × {qty}</span><span>{paise(money.sub)}</span></div>
-            {pass.feePaise > 0 && <div className="muted flex justify-between gap-4"><span>Processing fee</span><span>{paise(money.fee)}</span></div>}
+            {pass.feePaise > 0 && <div className="muted flex justify-between gap-4"><span className="inline-flex items-center gap-1.5">Processing fee<Tip text="A small extra charge per pass. It is already included in the total below, so the price you see is the price you pay." /></span><span>{paise(money.fee)}</span></div>}
             <div className="h-px bg-line" />
             <div className="flex items-baseline justify-between gap-4"><span className="font-semibold">Total (INR)</span><span className="text-2xl font-semibold">{paise(money.total)}</span></div>
           </div>
@@ -199,10 +200,10 @@ export function CheckoutForm() {
   );
 }
 
-function Input({ id, label, err, ...p }: { id: string; label: string; err?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Input({ id, label, err, tip, ...p }: { id: string; label: string; err?: string; tip?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium">{label}</label>
+      <label htmlFor={id} className="flex items-center gap-1.5 text-sm font-medium">{label}{tip && <Tip text={tip} />}</label>
       <input id={id} className="field" aria-invalid={!!err} aria-describedby={err ? `${id}-e` : undefined} {...p} />
       {err && <p id={`${id}-e`} className="field-error">{err}</p>}
     </div>

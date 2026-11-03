@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { paise } from "@/lib/normalize";
 import { formatFullIST } from "@/lib/time";
 import { api } from "./api";
+import { Tip } from "@/components/Tip";
 
 interface Contact {
   orderId: string; name: string; phone: string; email: string; instagram: string | null;
@@ -52,7 +53,7 @@ export function Contacts() {
   return (
     <section className="flex flex-col gap-5">
       <div className="card-plain p-5">
-        <h2 className="text-lg">Message template</h2>
+        <h2 className="flex items-center gap-1.5 text-lg">Message template<Tip text="Your default WhatsApp message. Words in [square brackets] are replaced with each person's own details when you tap their WhatsApp button." /></h2>
         <p className="muted mt-1 text-sm">Write once. Every WhatsApp button below fills in the person&apos;s details. Saved on this device.</p>
         <label htmlFor="tpl" className="sr-only">WhatsApp message</label>
         <textarea id="tpl" className="field mt-3 min-h-28 w-full" value={tpl} onChange={(e) => setTpl(e.target.value)} />
@@ -68,7 +69,7 @@ export function Contacts() {
       <div className="flex flex-wrap items-center gap-3">
         <label htmlFor="cq" className="sr-only">Search</label>
         <input id="cq" className="field min-w-[220px] flex-1" placeholder="Search name, phone, email or Instagram" value={q} onChange={(e) => setQ(e.target.value)} />
-        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--crimson)]" checked={unique} onChange={(e) => setUnique(e.target.checked)} />One row per phone number</label>
+        <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" className="size-5 accent-[var(--crimson)]" checked={unique} onChange={(e) => setUnique(e.target.checked)} />One row per phone number <Tip text="Someone who tried more than once appears once, showing their most complete order. Untick to see every order." /></label>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <a className={dl} href={exp("xlsx")}>Export Excel (.xlsx)</a>
@@ -111,7 +112,7 @@ export function Activity() {
   useEffect(() => { load(); const t = setInterval(load, 20_000); return () => clearInterval(t); }, [load]);
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-3"><h2 className="text-lg">Activity</h2><button className="muted inline-flex min-h-11 items-center text-sm hover:text-fg" onClick={load}>Refresh</button></div>
+      <div className="flex items-baseline justify-between gap-3"><h2 className="flex items-center gap-1.5 text-lg">Activity<Tip text="A permanent record of staff actions. Use it to check who approved a payment or changed a pass." /></h2><button className="muted inline-flex min-h-11 items-center text-sm hover:text-fg" onClick={load}>Refresh</button></div>
       <p className="muted text-sm">Every approval, rejection, export, pass change and account change, newest first.</p>
       {err && <p role="alert" className="rounded-sm border border-danger p-3 text-sm">{err}</p>}
       {!rows && !err && <div className="skeleton h-48" aria-busy="true" />}

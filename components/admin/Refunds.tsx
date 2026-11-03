@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { paise } from "@/lib/normalize";
 import { formatFullIST } from "@/lib/time";
 import { api } from "./api";
+import { Tip } from "@/components/Tip";
 
 interface Row { orderId: string; name: string; phone: string; amountPaise: number; reason: string | null; at: string; method?: string; reference?: string | null; note?: string | null; by?: string | null }
 interface Ledger { owed: Row[]; done: Row[]; totals: { owedCount: number; owedPaise: number; refundedCount: number; refundedPaise: number } }
@@ -26,8 +27,8 @@ export function Refunds() {
   return (
     <section className="flex flex-col gap-5">
       <div className="flex flex-wrap gap-3">
-        <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label">Still to refund</p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.owedPaise)}</p><p className="muted text-[13px]">{t.owedCount} {t.owedCount === 1 ? "person" : "people"}</p></div>
-        <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label">Refunded so far</p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.refundedPaise)}</p><p className="muted text-[13px]">{t.refundedCount} {t.refundedCount === 1 ? "person" : "people"}</p></div>
+        <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label flex items-center gap-1.5">Still to refund<Tip text="Total money that buyers paid but who won't get a ticket. Send it back, then mark it refunded." /></p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.owedPaise)}</p><p className="muted text-[13px]">{t.owedCount} {t.owedCount === 1 ? "person" : "people"}</p></div>
+        <div className="card-plain min-w-[160px] flex-1 px-5 py-4"><p className="label flex items-center gap-1.5">Refunded so far<Tip text="Money you have already sent back and recorded here." /></p><p className="tnum mt-1.5 text-[32px] font-semibold">{paise(t.refundedPaise)}</p><p className="muted text-[13px]">{t.refundedCount} {t.refundedCount === 1 ? "person" : "people"}</p></div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <a className={dl} href="/api/admin/export?kind=refunds&format=xlsx">Export Excel (.xlsx)</a>
@@ -36,7 +37,7 @@ export function Refunds() {
       </div>
 
       <div>
-        <h2 className="text-lg">To refund ({t.owedCount})</h2>
+        <h2 className="flex items-center gap-1.5 text-lg">To refund ({t.owedCount})<Tip text="Ask for their UPI ID on WhatsApp, send the money from your UPI app, then press Mark as refunded so the totals stay correct." /></h2>
         <p className="muted mt-1 text-sm">Send the money back from your UPI app, or settle it over WhatsApp, then record it here so the count stays right.</p>
         {l.owed.length === 0 ? <p className="card-plain muted mt-3 p-5 text-sm">Nobody is waiting for a refund.</p> : (
           <ul className="mt-3 flex flex-col gap-3">{l.owed.map((r) => <Owed key={r.orderId} r={r} done={load} />)}</ul>
@@ -44,7 +45,7 @@ export function Refunds() {
       </div>
 
       <div>
-        <h2 className="text-lg">Refunded ({t.refundedCount})</h2>
+        <h2 className="flex items-center gap-1.5 text-lg">Refunded ({t.refundedCount})<Tip text="A record of every refund: who, how much, how it was sent and who recorded it." /></h2>
         {l.done.length === 0 ? <p className="card-plain muted mt-3 p-5 text-sm">No refunds recorded yet.</p> : (
           <ul className="card-plain mt-3 divide-y divide-line">
             {l.done.map((r) => (

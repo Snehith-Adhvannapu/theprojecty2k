@@ -289,3 +289,8 @@ a, .card, .card-plain { transition: color 0.2s var(--ease-out), border-color 0.2
 }
 @keyframes edge-sheen { from { background-position: 160% 0; } to { background-position: -60% 0; } }
 @media (prefers-reduced-motion: reduce) { .welcome-rise, .rule-draw { animation: none; } .elite::after { animation: none; opacity: 0; } }
+
+/* Admin menu drawer on phones. */
+@keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
+.drawer-in { animation: drawer-in 0.25s var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) { .drawer-in { animation: none; } }

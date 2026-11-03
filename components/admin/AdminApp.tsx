@@ -1,6 +1,5 @@
 "use client";
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { Logo } from "@/components/Logo";
 import { Tip } from "@/components/Tip";
 import { paise } from "@/lib/normalize";
 import { formatTimeIST } from "@/lib/time";
@@ -11,6 +10,7 @@ import { PageText } from "./PageText";
 import { Refunds } from "./Refunds";
 import { Analytics } from "./Analytics";
 import { Guide } from "./Guide";
+import { AdminNav, Icon } from "./AdminNav";
 import { Tour } from "./Tour";
 import { tourSteps } from "./tour-steps";
 
@@ -42,11 +42,21 @@ interface Summary {
 interface Guest { id: string; shortCode: string; name: string; phone: string; email: string | null; instagram: string | null; passName: string; admits: number; status: string; source: string; orderId: string | null; usedAt: string | null; usedBy: string | null }
 interface Pass { id: string; name: string; description: string; pricePaise: number; feePaise: number; totalQty: number; admits: number; active: boolean; sort: number; sold: number; held?: number; salesStart: string | null; salesEnd: string | null }
 
+const GROUPS: { title: string; items: { id: Tab; icon: string }[] }[] = [
+  { title: "Daily work", items: [{ id: "Overview", icon: "grid" }, { id: "Payments", icon: "card" }, { id: "Refunds", icon: "undo" }, { id: "Guests", icon: "ticket" }, { id: "Check-ins", icon: "scan" }] },
+  { title: "Manage", items: [{ id: "Contacts", icon: "chat" }, { id: "Passes", icon: "tag" }, { id: "Volunteers", icon: "users" }, { id: "Page text", icon: "text" }, { id: "Tools", icon: "tool" }] },
+  { title: "More", items: [{ id: "Activity", icon: "list" }, { id: "Analytics", icon: "chart" }, { id: "Guide", icon: "book" }] },
+];
+
 export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: string; isSuper?: boolean; initialTab?: Tab; focusOrder?: string }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? "Overview");
   const [tour, setTour] = useState<number | null>(null);
+  const [collapsed, setCollapsedState] = useState(false);
+  const [menu, setMenu] = useState(false); // the phone drawer
   const steps = tourSteps(!!isSuper);
-  // Red numbers on the tabs that are waiting for a person: payments to review, refunds to send. Refreshed every 20s and on each tab change.
+  useEffect(() => { try { setCollapsedState(localStorage.getItem("y2k_nav_collapsed") === "1"); } catch { /* private mode */ } }, []);
+  const setCollapsed = (v: boolean) => { setCollapsedState(v); try { localStorage.setItem("y2k_nav_collapsed", v ? "1" : "0"); } catch { /* private mode */ } };
+  // Red numbers on the items that are waiting for a person: payments to verify, refunds to send. Refreshed every 20s and on each tab change.
   const [badge, setBadge] = useState<Partial<Record<Tab, number>>>({});
   useEffect(() => {
     let live = true;
@@ -58,53 +68,55 @@ export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: stri
     return () => { live = false; clearInterval(t); };
   }, [tab]);
   const startTour = (id?: string) => { const at = id ? steps.findIndex((s) => s.id === id) : 0; setTour(at < 0 ? 0 : at); };
-  const endTour = (finished: boolean) => { setTour(null); try { localStorage.setItem("y2k_tour_seen", finished ? "done" : "skipped"); } catch { /* private mode */ } };
+  const endTour = (finished: boolean) => { setTour(null); setMenu(false); try { localStorage.setItem("y2k_tour_seen", finished ? "done" : "skipped"); } catch { /* private mode */ } };
+  // On a phone the menu is a drawer. While the tour points at the menu, hold it open; for every other step, close it.
+  const onStep = (target?: string) => setMenu(!!target && (target === "nav" || target === "hdr-links" || target.startsWith("tab-")));
+  const groups = GROUPS.map((g) => ({ title: g.title, items: g.items.filter((i) => i.id !== "Analytics" || isSuper).map((i) => ({ id: i.id, label: i.id, icon: i.icon })) }));
+  const toVerify = badge.Payments ?? 0;
+  const toRefund = badge.Refunds ?? 0;
+  const pills = (
+    <>
+      {toVerify > 0 && tab !== "Payments" && <button data-tour="tv-pill" onClick={() => setTab("Payments")} className="tnum inline-flex min-h-11 items-center gap-2 rounded-sm bg-crimson px-4 text-sm font-semibold text-fg">{toVerify} to verify <span aria-hidden="true">→</span></button>}
+      {toRefund > 0 && tab !== "Refunds" && <button onClick={() => setTab("Refunds")} className="tnum inline-flex min-h-11 items-center gap-2 rounded-sm border border-blood px-4 text-sm font-semibold">{toRefund} to refund <span aria-hidden="true">→</span></button>}
+    </>
+  );
   return (
-    <div className="calm min-h-dvh text-[15px]">
-      <div className="wrap pb-12">
-        <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-line py-2">
-          <div className="flex items-center gap-4">
-            <Logo size={40} />
-            <span className="label">Admin</span>
-          </div>
-          <div className="muted flex items-center gap-4 text-sm" data-tour="hdr-links">
-            {name}
-            <button className="inline-flex min-h-11 items-center border-b border-blood text-fg" onClick={() => startTour()}>Tour</button>
-            <a href="/scan" className="inline-flex min-h-11 items-center border-b border-blood text-fg">Scanner</a>
-            <button className="inline-flex min-h-11 items-center hover:text-fg" onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}>Sign out</button>
-          </div>
-        </header>
-        <nav data-tour="nav" aria-label="Admin sections" className="sticky top-0 z-20 -mx-5 flex gap-x-5 overflow-x-auto border-b border-line bg-bg px-5 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
-          {TABS.filter((t) => t !== "Analytics" || isSuper).map((t) => {
-            const n = badge[t] ?? 0;
-            return (
-              <button key={t} data-tour={`tab-${t}`} onClick={() => setTab(t)} aria-current={tab === t ? "page" : undefined}
-                aria-label={n > 0 ? `${t}, ${n} ${t === "Payments" ? "to review" : "need action"}` : undefined}
-                className={`inline-flex min-h-12 shrink-0 items-center gap-1.5 border-b-2 px-1 text-sm transition-colors ${tab === t ? "border-crimson" : "muted border-transparent hover:text-fg"}`}>
-                {t}
-                {n > 0 && <span aria-hidden="true" className="tnum inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-crimson px-1.5 text-[12px] font-semibold leading-none text-fg">{n > 99 ? "99+" : n}</span>}
-              </button>
-            );
-          })}
-        </nav>
-        <p className="muted mt-4 text-sm">{TAB_HELP[tab]}</p>
-        <div className="slide-up mt-4" key={tab}>
-          {tab === "Overview" && <Overview go={setTab} onTour={() => startTour()} />}
-          {tab === "Guide" && <Guide start={startTour} />}
-          {tab === "Payments" && <Payments focusOrder={focusOrder} />}
-          {tab === "Contacts" && <Contacts />}
-          {tab === "Activity" && <Activity />}
-          {tab === "Refunds" && <Refunds />}
-          {tab === "Page text" && <PageText />}
-          {tab === "Guests" && <Guests />}
-          {tab === "Passes" && <Passes />}
-          {tab === "Volunteers" && <Volunteers />}
-          {tab === "Check-ins" && <Checkins />}
-          {tab === "Tools" && <Tools />}
-          {tab === "Analytics" && isSuper && <Analytics />}
+    <div className="calm min-h-dvh text-[15px] lg:flex">
+      <AdminNav groups={groups} tab={tab} setTab={(id) => setTab(id as Tab)} badge={badge as Record<string, number>} name={name}
+        collapsed={collapsed} setCollapsed={setCollapsed} open={menu} setOpen={setMenu} onTour={() => startTour()} />
+      <div className="min-w-0 flex-1">
+        <div className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-line bg-bg px-3 lg:hidden">
+          <button aria-label="Open menu" aria-expanded={menu} className="relative inline-flex size-11 items-center justify-center rounded-sm hover:bg-[var(--selected)]" onClick={() => setMenu(true)}>
+            <Icon n="menu" />
+            {(toVerify + toRefund) > 0 && <span aria-hidden="true" className="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-crimson" />}
+          </button>
+          <span className="truncate text-base font-semibold">{tab}</span>
+          <span className="ml-auto flex items-center gap-2">{pills}</span>
         </div>
+        <main className="mx-auto w-full max-w-[1100px] px-5 pb-12 pt-5 md:px-8 lg:pt-8">
+          <div className="hidden items-center justify-between gap-4 lg:flex">
+            <h1 className="text-2xl">{tab}</h1>
+            <div className="flex items-center gap-2">{pills}</div>
+          </div>
+          <p className="muted text-sm lg:mt-2">{TAB_HELP[tab]}</p>
+          <div className="slide-up mt-4" key={tab}>
+            {tab === "Overview" && <Overview go={setTab} onTour={() => startTour()} />}
+            {tab === "Guide" && <Guide start={startTour} />}
+            {tab === "Payments" && <Payments focusOrder={focusOrder} />}
+            {tab === "Contacts" && <Contacts />}
+            {tab === "Activity" && <Activity />}
+            {tab === "Refunds" && <Refunds />}
+            {tab === "Page text" && <PageText />}
+            {tab === "Guests" && <Guests />}
+            {tab === "Passes" && <Passes />}
+            {tab === "Volunteers" && <Volunteers />}
+            {tab === "Check-ins" && <Checkins />}
+            {tab === "Tools" && <Tools />}
+            {tab === "Analytics" && isSuper && <Analytics />}
+          </div>
+        </main>
       </div>
-      {tour !== null && <Tour steps={steps} start={tour} tab={tab} setTab={(t) => setTab(t as Tab)} onClose={endTour} />}
+      {tour !== null && <Tour steps={steps} start={tour} tab={tab} setTab={(t) => setTab(t as Tab)} onStep={onStep} onClose={endTour} />}
     </div>
   );
 }

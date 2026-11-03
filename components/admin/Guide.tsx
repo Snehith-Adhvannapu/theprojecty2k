@@ -29,7 +29,7 @@ const PLAN: Plan[] = [
     "Check every phone is charged, and that your team has the WhatsApp number to reach you.",
   ] },
   { id: "doors", when: "Event day, before doors open", items: [
-    "Open the scanner (Scanner link at the top) and scan one test ticket to be sure everything works.",
+    "Open the scanner (Scanner, in the menu) and scan one test ticket to be sure everything works.",
     "Give each volunteer the rules: green = let in and check the name on their photo ID; red = do not admit; amber = no signal, wait; blue = admitted while offline.",
     "Keep the printed guest list at the door.",
     "Overview tab: note the sold count so you can compare with the number checked in.",
@@ -101,6 +101,8 @@ const REFS: Ref[] = [
 ];
 
 const FIXES: [string, string][] = [
+  ["Where are the payments I need to check?", "Look for the red to-verify button at the top of any screen, or the red number next to Payments in the menu. Tap either one. On a phone, open the menu with the button at the top left."],
+  ["The menu is in my way", "On a computer, press Collapse menu at the bottom of the menu to shrink it to icons. Press it again to expand. On a phone the menu closes by itself after you pick something."],
   ["A buyer says they paid but I see nothing", "Check Contacts. If they are Not paid yet, their order exists but they never sent the UTR. WhatsApp them the order link, or ask for the UTR and screenshot. If their hold ran out, they can still submit while passes remain, and the system tells them if passes sold out."],
   ["Two people sent the same UTR", "A UTR can only be used once. The second one is refused automatically. If the first buyer is genuine, ask the second for the correct UTR."],
   ["Passes sold out but someone paid", "They appear in Refunds as needing a refund, and they are emailed. Send the money back and mark it refunded."],
@@ -132,7 +134,7 @@ export function Guide({ start }: { start: (id?: string) => void }) {
     <div className="flex max-w-[860px] flex-col gap-6">
       <section className="card relative overflow-hidden p-6">
         <h2 className="text-xl">Take the guided tour</h2>
-        <p className="muted mt-2 text-[15px]">A 5-minute walk through every screen. It highlights each button, tells you what it is, and asks you to tap the tabs as you go. Nothing in it changes any data.</p>
+        <p className="muted mt-2 text-[15px]">A 5-minute walk through every screen, including the new menu and the red to-verify button. It highlights each button, tells you what it is, and asks you to tap the menu items as you go. You can press Skip tour at any step. Nothing in it changes any data.</p>
         <button className="btn btn-primary btn-calm mt-4 min-h-12 px-7" onClick={() => start()}>Start the tour</button>
       </section>
 

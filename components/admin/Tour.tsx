@@ -17,8 +17,8 @@ function findTarget(name: string): HTMLElement | null {
   return null;
 }
 
-export function Tour({ steps, start, tab, setTab, onClose }: {
-  steps: TourStep[]; start: number; tab: string; setTab: (t: string) => void; onClose: (finished: boolean) => void;
+export function Tour({ steps, start, tab, setTab, onStep, onClose }: {
+  steps: TourStep[]; start: number; tab: string; setTab: (t: string) => void; onStep?: (target?: string) => void; onClose: (finished: boolean) => void;
 }) {
   const [i, setI] = useState(start);
   const [el, setEl] = useState<HTMLElement | null>(null);
@@ -36,6 +36,7 @@ export function Tour({ steps, start, tab, setTab, onClose }: {
   // Show the tab this step needs, then wait for its target to appear.
   useEffect(() => {
     setEl(null); setBox(null); setMissing(false);
+    onStep?.(s.target);
     if (s.tab && s.tab !== tabNow.current) setTab(s.tab);
     if (!s.target) return;
     let tries = 0;

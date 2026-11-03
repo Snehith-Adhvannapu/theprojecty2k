@@ -6,8 +6,9 @@ import { formatTimeIST } from "@/lib/time";
 import { api } from "./api";
 import { Payments } from "./Payments";
 import { Activity, Contacts } from "./Contacts";
+import { PageText } from "./PageText";
 
-const TABS = ["Overview", "Payments", "Contacts", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools"] as const;
+const TABS = ["Overview", "Payments", "Contacts", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools"] as const;
 type Tab = (typeof TABS)[number];
 
 interface Summary {
@@ -46,6 +47,7 @@ export function AdminApp({ name, initialTab, focusOrder }: { name: string; initi
           {tab === "Payments" && <Payments focusOrder={focusOrder} />}
           {tab === "Contacts" && <Contacts />}
           {tab === "Activity" && <Activity />}
+          {tab === "Page text" && <PageText />}
           {tab === "Guests" && <Guests />}
           {tab === "Passes" && <Passes />}
           {tab === "Volunteers" && <Volunteers />}

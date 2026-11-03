@@ -1,3 +1,4 @@
+import { getAbout } from "@/lib/site-content";
 import Image from "next/image";
 import Link from "next/link";
 import { eventConfig as e } from "@/config/event";
@@ -27,7 +28,8 @@ const photos = [
   { src: "/images/last-dj.webp", w: 720, h: 1280, alt: "The DJ under the Project Y2K screen with the crowd in front", cls: "col-span-2 sm:col-span-1 [&_img]:aspect-[4/3] sm:[&_img]:aspect-[3/4]" },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const about = await getAbout();
   return (
     <main id="top" className="overflow-x-clip">
       <header className="sticky top-0 z-30 border-b border-line bg-bg">
@@ -49,10 +51,10 @@ export default function Home() {
             <p className="in eyebrow" style={{ "--i": 0 } as React.CSSProperties}>✦ {e.dateLabel}</p>
             <h1 className="sr-only">Project Y2K26: The Matrix</h1>
             <div className="in mt-5 max-w-[46ch]" style={{ "--i": 3 } as React.CSSProperties}>
-              <p className="text-[22px] font-semibold leading-snug">{e.about.heading}</p>
-              <p className="mt-3 text-lg font-medium">{e.about.lead}</p>
-              {e.about.paras.map((t) => <p key={t} className="muted mt-3 text-[17px] leading-relaxed">{t}</p>)}
-              <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-crimson">{e.about.closer}</p>
+              <p className="text-[22px] font-semibold leading-snug">{about.heading}</p>
+              {about.lead && <p className="mt-3 text-lg font-medium">{about.lead}</p>}
+              {about.paras.map((t, i) => <p key={i} className="muted mt-3 whitespace-pre-line text-[17px] leading-relaxed">{t}</p>)}
+              {about.closer && <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-crimson">{about.closer}</p>}
             </div>
             <dl className="in mt-8 flex flex-wrap gap-x-10 gap-y-5" style={{ "--i": 4 } as React.CSSProperties}>
               {[
@@ -71,7 +73,7 @@ export default function Home() {
               <a href="#last" className="inline-flex min-h-12 items-center text-[13px] uppercase tracking-[0.25em]">See last time</a>
             </div>
             <p className="in muted mt-5 text-[13px]" style={{ "--i": 6 } as React.CSSProperties}>
-              Pay by UPI · PDF ticket by email once verified · Non-refundable, no re-entry
+              {about.note}
             </p>
             <p className="in mt-4 text-sm" style={{ "--i": 7 } as React.CSSProperties}>
               Already booked? <Link href="/find-ticket" className="border-b border-blood">Find my ticket</Link>

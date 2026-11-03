@@ -1,3 +1,4 @@
+import { appUrl } from "@/lib/app-url";
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Cormorant_Garamond, Manrope } from "next/font/google";
 import { eventConfig } from "@/config/event";
@@ -13,7 +14,7 @@ const manrope = Manrope({ weight: ["400", "500", "600", "800"], subsets: ["latin
 export const metadata: Metadata = {
   title: { default: `${eventConfig.name} · ${eventConfig.dateLabel}`, template: `%s · ${eventConfig.name}` },
   description: eventConfig.description,
-  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(appUrl()),
 };
 
 export const viewport: Viewport = { themeColor: "#050505", width: "device-width", initialScale: 1 };

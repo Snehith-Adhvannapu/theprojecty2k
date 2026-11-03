@@ -9,7 +9,7 @@ import { ticketsForOrder } from "@/lib/tickets";
 import { ticketPdf } from "@/lib/tickets/pdf";
 
 const MAX_ATTEMPTS = 5;
-const appUrl = () => (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+import { appUrl } from "@/lib/app-url";
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 interface Mail {

@@ -5,7 +5,7 @@ import { eventConfig } from "@/config/event";
 import { query } from "@/lib/db";
 import { sendAdminAlert } from "@/lib/email";
 
-const appUrl = () => (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+import { appUrl } from "@/lib/app-url";
 
 export async function notifyNewPayment(orderId: string): Promise<void> {
   try {

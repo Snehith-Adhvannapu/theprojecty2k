@@ -65,6 +65,8 @@ export const eventConfig = {
   limits: { maxPassesPerOrder: 15, holdMinutes: 20, maxPendingPerPhone: 2 },
   // Flat fee added once per booking (not per ticket): tax, upkeep and website costs. Added server-side when the order is created.
   bookingFeePaise: 3000,
+  /** Checkout asks for an Instagram handle for every person on the order, not just the buyer. */
+  requireGuestInstagram: true,
 };
 
 export const isPlaceholder = (s: string) => /\[[^\]]+\]/.test(s);

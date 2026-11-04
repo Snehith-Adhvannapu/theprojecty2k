@@ -84,7 +84,7 @@ export async function issueTicket(q: Q, t: IssueInput): Promise<{ id: string; sh
 /** Issues every ticket for a paid order (one per pass unit). Inside the caller's transaction. */
 export async function issueTicketsForOrder(q: Q, orderId: string): Promise<number> {
   const [order] = await q.query(
-    "SELECT buyer_name, buyer_phone, buyer_email, buyer_instagram FROM orders WHERE id = $1",
+    "SELECT buyer_name, buyer_phone, buyer_email, buyer_instagram, guest_instagrams FROM orders WHERE id = $1",
     [orderId],
   );
   const items = await q.query(
@@ -92,6 +92,10 @@ export async function issueTicketsForOrder(q: Q, orderId: string): Promise<numbe
        FROM order_items oi JOIN pass_types p ON p.id = oi.pass_type_id WHERE oi.order_id = $1`,
     [orderId],
   );
+  // Handles go to tickets in issue order: the buyer first, then the guests. A ticket carries the first handle of the people it admits; the full list stays on the order.
+  const guests = Array.isArray(order.guest_instagrams) ? (order.guest_instagrams as string[]) : [];
+  const handles = [order.buyer_instagram, ...guests].filter((h): h is string => !!h);
+  let cursor = 0;
   let n = 0;
   for (const it of items) {
     for (let i = 0; i < it.qty; i++) {
@@ -103,9 +107,10 @@ export async function issueTicketsForOrder(q: Q, orderId: string): Promise<numbe
         holderName: order.buyer_name,
         holderPhone: order.buyer_phone,
         holderEmail: order.buyer_email,
-        holderInstagram: order.buyer_instagram,
+        holderInstagram: handles[cursor] ?? order.buyer_instagram,
         source: "purchase",
       });
+      cursor += it.admits;
       n++;
     }
   }

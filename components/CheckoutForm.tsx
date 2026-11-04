@@ -5,6 +5,7 @@ import { rememberOrder } from "@/lib/myOrders";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { eventConfig as e } from "@/config/event";
+import { GuestHandles } from "@/components/GuestHandles";
 import { normalizeEmail, normalizeInstagram, normalizePhone, paise } from "@/lib/normalize";
 
 interface Pass {
@@ -29,8 +30,10 @@ export function CheckoutForm() {
   const [bookingFee, setBookingFee] = useState<number>(e.bookingFeePaise);
   const [qty, setQty] = useState(1);
   const [f, setF] = useState<Fields>({ name: "", phone: "", email: "", instagram: "" });
+  const [guests, setGuests] = useState<string[]>([]);
+  const [badGuests, setBadGuests] = useState<boolean[]>([]);
   const [accepted, setAccepted] = useState(false);
-  const [errs, setErrs] = useState<Partial<Record<keyof Fields | "accepted", string>>>({});
+  const [errs, setErrs] = useState<Partial<Record<keyof Fields | "accepted" | "guests", string>>>({});
   const [phase, setPhase] = useState<Phase>("idle");
   const [message, setMessage] = useState("");
   const attempt = useRef({ key: crypto.randomUUID(), sig: "" });
@@ -46,6 +49,13 @@ export function CheckoutForm() {
   useEffect(() => {
     try { sessionStorage.setItem(STORE, JSON.stringify({ f })); } catch { /* ignore */ }
   }, [f]);
+
+  // One handle for every person except the buyer. The boxes grow and shrink with the quantity and keep what was typed.
+  const others = e.requireGuestInstagram && pass ? Math.max(0, qty * pass.admits - 1) : 0;
+  useEffect(() => {
+    setGuests((g) => (g.length === others ? g : Array.from({ length: others }, (_, i) => g[i] ?? "")));
+    setBadGuests([]);
+  }, [others]);
 
   useEffect(() => {
     fetch("/api/event").then((r) => r.json()).then((j) => {
@@ -76,6 +86,9 @@ export function CheckoutForm() {
     if (!/^\S+@\S+\.\S+$/.test(normalizeEmail(f.email))) x.email = "Enter a valid email address";
     if (!f.instagram.trim()) x.instagram = "Enter your Instagram handle";
     else if (!normalizeInstagram(f.instagram)) x.instagram = "That doesn't look like an Instagram handle";
+    const bg = guests.map((g) => !normalizeInstagram(g));
+    setBadGuests(bg);
+    if (bg.some(Boolean)) x.guests = "Add an Instagram handle for every guest.";
     if (!accepted) x.accepted = "Please accept the terms to continue";
     setErrs(x);
     return Object.keys(x).length === 0;
@@ -93,11 +106,11 @@ export function CheckoutForm() {
     setPhase("starting");
     try {
       // Same details + same tap = same idempotency key (double-tap safe). Any change = a new order.
-      const sig = JSON.stringify([pass.id, qty, f, accepted]);
+      const sig = JSON.stringify([pass.id, qty, f, guests, accepted]);
       if (attempt.current.sig !== sig) attempt.current = { key: crypto.randomUUID(), sig };
       const order = await post("/api/orders", {
         passTypeId: pass.id, qty, name: f.name, phone: f.phone, email: f.email,
-        instagram: f.instagram, idempotencyKey: attempt.current.key, accepted: true,
+        instagram: f.instagram, guests, idempotencyKey: attempt.current.key, accepted: true,
       });
       rememberOrder(order.id);
       router.push(`/order/${order.id}`);
@@ -161,9 +174,11 @@ export function CheckoutForm() {
               <p id="phone-help" className={errs.phone ? "field-error" : "muted text-[13px]"}>{errs.phone ?? "Used for event updates and to find you at the door."}</p>
             </div>
             <Input id="f-email" label="Email" tip="Your ticket is emailed here as a PDF once your payment is verified. Check the spelling, and look in spam if it doesn't arrive." type="email" err={errs.email} value={f.email} onChange={set("email")} disabled={busy} autoComplete="email" placeholder="you@example.com" />
-            <Input id="f-ig" label="Instagram handle" tip="Your Instagram username, with or without the @. A link to your profile also works." err={errs.instagram} value={f.instagram} onChange={set("instagram")} disabled={busy} autoComplete="off" autoCapitalize="none" placeholder="@yourhandle" />
+            <Input id="f-ig" label="Your Instagram handle" tip="Your Instagram username, with or without the @. A link to your profile also works." err={errs.instagram} value={f.instagram} onChange={set("instagram")} disabled={busy} autoComplete="off" autoCapitalize="none" placeholder="@yourhandle" />
           </div>
         </section>
+
+        {others > 0 && <GuestHandles values={guests} onChange={(v) => { setGuests(v); if (badGuests.some(Boolean)) setBadGuests([]); }} bad={badGuests} disabled={busy} />}
 
         <section aria-labelledby="h-sum" className="mt-8">
           <h2 id="h-sum" className="label flex items-center gap-1.5">Order summary<Tip text="Nothing is charged on this page. Next you will pay by UPI in your own app, then send us the proof." /></h2>

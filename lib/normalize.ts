@@ -24,6 +24,12 @@ export function normalizeInstagram(raw: string | null | undefined): string | nul
   return /^[a-z0-9._]{1,30}$/.test(h) ? h : null;
 }
 
+/** Turns pasted text ("@a, b
+https://instagram.com/c") into a clean list of handles. Anything that isn't a handle is dropped. */
+export function parseHandles(text: string): string[] {
+  return text.split(/[\s,;]+/).map((t) => normalizeInstagram(t)).filter((h): h is string => !!h);
+}
+
 export const normalizeEmail = (raw: string) => raw.trim().toLowerCase();
 
 export const paise = (n: number) =>

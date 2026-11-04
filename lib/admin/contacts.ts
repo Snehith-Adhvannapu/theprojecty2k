@@ -2,7 +2,7 @@
 import { query } from "@/lib/db";
 
 export interface Contact {
-  orderId: string; name: string; phone: string; email: string; instagram: string | null;
+  orderId: string; name: string; phone: string; email: string; instagram: string | null; guests: string[];
   status: string; statusLabel: string; pass: string; qty: number; amountPaise: number; at: string;
 }
 
@@ -30,7 +30,7 @@ export async function listContacts(opts: { q?: string; status?: StatusFilter; un
   }
   const rank = `CASE o.status WHEN 'paid' THEN 0 WHEN 'awaiting_review' THEN 1 WHEN 'needs_refund' THEN 2 WHEN 'pending' THEN 3 ELSE 4 END`;
   const sql = `
-    SELECT ${opts.unique ? "DISTINCT ON (o.buyer_phone)" : ""} o.id, o.buyer_name, o.buyer_phone, o.buyer_email, o.buyer_instagram, o.status, o.amount_paise, o.created_at, (o.expires_at <= now()) AS expired,
+    SELECT ${opts.unique ? "DISTINCT ON (o.buyer_phone)" : ""} o.id, o.buyer_name, o.buyer_phone, o.buyer_email, o.buyer_instagram, o.guest_instagrams, o.status, o.amount_paise, o.created_at, (o.expires_at <= now()) AS expired,
            (SELECT string_agg(p.name, ', ') FROM order_items oi JOIN pass_types p ON p.id = oi.pass_type_id WHERE oi.order_id = o.id) AS pass,
            (SELECT coalesce(sum(oi.qty), 0)::int FROM order_items oi WHERE oi.order_id = o.id) AS qty
       FROM orders o ${where.length ? "WHERE " + where.join(" AND ") : ""}
@@ -38,7 +38,8 @@ export async function listContacts(opts: { q?: string; status?: StatusFilter; un
   const rows = await query(sql, params);
   const out = rows.map((r) => ({
     orderId: r.id as string, name: r.buyer_name as string, phone: r.buyer_phone as string, email: r.buyer_email as string,
-    instagram: (r.buyer_instagram ?? null) as string | null, status: r.status as string, statusLabel: r.status === "pending" && r.expired ? "Hold expired, seats released" : LABEL[r.status as string] ?? (r.status as string),
+    instagram: (r.buyer_instagram ?? null) as string | null,
+    guests: (Array.isArray(r.guest_instagrams) ? r.guest_instagrams : []) as string[], status: r.status as string, statusLabel: r.status === "pending" && r.expired ? "Hold expired, seats released" : LABEL[r.status as string] ?? (r.status as string),
     pass: (r.pass ?? "") as string, qty: r.qty as number, amountPaise: r.amount_paise as number, at: new Date(r.created_at).toISOString(),
   }));
   return opts.unique ? out.sort((a, b) => b.at.localeCompare(a.at)) : out;

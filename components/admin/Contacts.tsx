@@ -7,7 +7,7 @@ import { api } from "./api";
 import { Tip } from "@/components/Tip";
 
 interface Contact {
-  orderId: string; name: string; phone: string; email: string; instagram: string | null;
+  orderId: string; name: string; phone: string; email: string; instagram: string | null; guests?: string[];
   status: string; statusLabel: string; pass: string; qty: number; amountPaise: number; at: string;
 }
 
@@ -87,7 +87,7 @@ export function Contacts() {
               <div className="min-w-0 text-sm">
                 <p className="text-base font-semibold">{c.name} <span className={`ml-1 text-[13px] font-normal ${c.status === "paid" ? "" : "text-crimson"}`}>{c.statusLabel}</span></p>
                 <p className="muted tnum">{c.phone} · <span className="break-all">{c.email}</span></p>
-                <p className="muted text-[13px]">{c.instagram ? `@${c.instagram} · ` : ""}{c.pass} × {c.qty} · {paise(c.amountPaise)} · {formatFullIST(c.at)}</p>
+                <p className="muted text-[13px]">{c.instagram ? `@${c.instagram} · ` : ""}{c.guests?.length ? `${c.guests.map((g) => `@${g}`).join(" ")} · ` : ""}{c.pass} × {c.qty} · {paise(c.amountPaise)} · {formatFullIST(c.at)}</p>
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
                 <a className="btn btn-primary btn-calm min-h-11 basis-full px-5 text-sm sm:basis-auto" href={waLink(c, tpl)} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${c.name}`}>WhatsApp</a>

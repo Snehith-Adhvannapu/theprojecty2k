@@ -30,8 +30,8 @@ export async function buildTables(kind: Kind, opts: ExportOpts = {}): Promise<Ta
     const c = await listContacts({ status: opts.status, unique: opts.unique });
     return [{
       name: "Contacts",
-      header: ["Name", "Phone", "Email", "Instagram", "Status", "Pass", "Tickets", "Amount (Rs)", "Entered at (IST)", "WhatsApp link", "Order ID"],
-      rows: c.map((r) => [safe(r.name), r.phone, safe(r.email), safe(r.instagram), r.statusLabel, safe(r.pass), r.qty, r.amountPaise / 100, formatFullIST(r.at), `https://wa.me/${r.phone.replace(/\D/g, "")}`, r.orderId]),
+      header: ["Name", "Phone", "Email", "Instagram", "Guest Instagram handles", "Status", "Pass", "Tickets", "Amount (Rs)", "Entered at (IST)", "WhatsApp link", "Order ID"],
+      rows: c.map((r) => [safe(r.name), r.phone, safe(r.email), safe(r.instagram), safe(r.guests.map((g) => `@${g}`).join(" ")), r.statusLabel, safe(r.pass), r.qty, r.amountPaise / 100, formatFullIST(r.at), `https://wa.me/${r.phone.replace(/\D/g, "")}`, r.orderId]),
     }];
   }
   if (kind === "attendees") {

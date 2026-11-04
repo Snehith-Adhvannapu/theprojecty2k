@@ -63,6 +63,7 @@ export const orders = pgTable(
     buyerPhone: text("buyer_phone").notNull(),
     buyerEmail: text("buyer_email").notNull(),
     buyerInstagram: text("buyer_instagram"),
+    guestInstagrams: jsonb("guest_instagrams"), // handles of the other people on the order, in ticket order
     idempotencyKey: text("idempotency_key").notNull().unique(),
     amountPaise: integer("amount_paise").notNull(),
     feePaise: integer("fee_paise").notNull().default(0),

@@ -65,6 +65,7 @@ export const TOUR_STEPS: TourStep[] = [
   { tab: "Activity", target: "ac-list", title: "Who did what", text: "Every action by every admin, newest first, with the time. If something looks wrong, check here first.", fallback: "Every action by every admin appears here, newest first, with the time." },
 
   { id: "tools", tab: "Activity", target: "tab-Tools", click: true, title: "Tools", text: "Exports, the printed backup list, free tickets and email fixes. Tap Tools." },
+  { tab: "Tools", target: "tl-links", title: "Short links to share", text: "One link for your Instagram bio, one for stories, one for WhatsApp. Press Copy link and paste it where you post. Analytics then shows which link brought buyers." },
   { tab: "Tools", target: "tl-emails", title: "Emails", text: "Tickets are emailed automatically. If any email fails, it shows here. Press Send failed emails again to retry. If it keeps failing, check the address in Guests, Edit details." },
   { tab: "Tools", target: "tl-export", title: "Export and print the guest list", text: "Download the attendee list, or print it. Print it before the doors open. If the internet or the phones fail, the paper list is your backup at the door." },
   { tab: "Tools", target: "tl-comp", title: "Free (comp) tickets", text: "For a guest, a friend or someone who paid you another way. Pick the pass, enter their details and a reason. It uses one seat from that pass and is logged in Activity." },

@@ -24,6 +24,7 @@ const PLAN: Plan[] = [
   { id: "dayBefore", when: "The day before the event", items: [
     "Payments tab: nothing left in To verify.",
     "Refunds tab: nothing left in To refund.",
+    "Tools tab: copy the short link for your Instagram bio and post it. Check Analytics later to see how many buyers it brought.",
     "Tools tab: download the attendee list, and print the guest list as a paper backup for the door.",
     "Volunteers tab: ask every volunteer to sign in on their phone and open the scanner once, so the camera permission is already allowed.",
     "Check every phone is charged, and that your team has the WhatsApp number to reach you.",

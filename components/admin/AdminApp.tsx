@@ -12,6 +12,7 @@ import { Analytics } from "./Analytics";
 import { Guide } from "./Guide";
 import { EmailUpdate } from "./EmailUpdate";
 import { Money } from "./Money";
+import { ShareLinks } from "./ShareLinks";
 import { AdminNav, Icon } from "./AdminNav";
 import { Tour } from "./Tour";
 import { tourSteps } from "./tour-steps";
@@ -509,6 +510,7 @@ function Tools() {
   const hm = health.data?.health;
   return (
     <section className="flex flex-wrap gap-6">
+      <ShareLinks />
       <div data-tour="tl-emails" className="card-plain basis-full p-5">
         <h2 className="flex items-center gap-1.5 text-lg">Emails<Tip text="Tickets and updates are emailed automatically. If an email could not be delivered after several tries it is marked failed. Press Send failed emails again to try once more. Check the buyer's email address first (Guests, Edit details)." /></h2>
         <p className="muted mt-1 text-sm tnum">{hm ? `${hm.pending_emails} waiting to send · ${hm.failed_emails} failed` : "Loading…"}</p>

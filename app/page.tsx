@@ -10,6 +10,8 @@ import { PassPicker } from "@/components/PassPicker";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StickyCta } from "@/components/StickyCta";
 import { WelcomeBack } from "@/components/WelcomeBack";
+import { Countdown } from "@/components/Countdown";
+import { SalesPulse } from "@/components/SalesPulse";
 
 // Static: built at deploy, zero DB calls on render. Availability arrives via PassPicker.
 export const dynamic = "force-static";
@@ -165,6 +167,8 @@ export default async function Home() {
         <p className="eyebrow">{L.passes.eyebrow}</p>
         <h2 className="h2 mt-4"><Rich text={L.passes.heading} as="em" /></h2>
         <p className="muted mt-4 max-w-[56ch]">{L.passes.intro}</p>
+        <div className="mt-8 min-h-[92px]"><Countdown /></div>
+        <SalesPulse />
         <PassPicker />
         <ol className="muted mt-10 flex flex-wrap gap-x-10 gap-y-4 text-sm">
           {L.passes.steps.map((t, i) => <li key={i}><span className="text-crimson">{i + 1}</span>&nbsp; {t}</li>)}

@@ -27,7 +27,7 @@ const instagramUrl = () => `https://www.instagram.com/${e.organiser.instagram.re
 
 /** schema.org graph: the Event (so it can appear as an event result), the organiser and the site. */
 export function structuredData(prices: { low: number; high: number; count: number } | null) {
-  const ogImage = `${SITE_URL}/images/og.jpg`;
+  const ogImage = `${SITE_URL}/images/og-tickets.jpg`;
   return {
     "@context": "https://schema.org",
     "@graph": [

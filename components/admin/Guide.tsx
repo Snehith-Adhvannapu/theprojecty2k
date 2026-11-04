@@ -63,6 +63,12 @@ const REFS: Ref[] = [
     "Tap WhatsApp on any row to open the chat with the message ready. Call and Copy are next to it.",
     "Export to Excel or CSV for your own records. Exports are logged.",
   ] },
+  { id: "emailupdate", name: "Email update", what: "Send one stylish Project Y2K email to a whole group, to keep people excited.", how: [
+    "Pick who gets it: ticket holders, people who started but did not buy, or everyone who registered.",
+    "Write or paste your message. [name], [sold], [left] and [date] are filled in for each person.",
+    "Press Show preview to see it in the Project Y2K design, then Send a test to me.",
+    "Press Send and confirm. Sent emails cannot be taken back, so always test first.",
+  ] },
   { id: "refunds", name: "Refunds", what: "Money you owe back, and a record of what you already returned.", how: [
     "A buyer lands here when you choose Reject & refund, or when passes sold out after they paid.",
     "Tap Ask for UPI ID / QR, send the money from your UPI app, then press Mark as refunded with how you sent it.",

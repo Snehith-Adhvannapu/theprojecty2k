@@ -10,11 +10,13 @@ import { PageText } from "./PageText";
 import { Refunds } from "./Refunds";
 import { Analytics } from "./Analytics";
 import { Guide } from "./Guide";
+import { EmailUpdate } from "./EmailUpdate";
+import { Money } from "./Money";
 import { AdminNav, Icon } from "./AdminNav";
 import { Tour } from "./Tour";
 import { tourSteps } from "./tour-steps";
 
-const TABS = ["Overview", "Guide", "Payments", "Contacts", "Refunds", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Activity", "Tools", "Analytics"] as const;
+const TABS = ["Overview", "Guide", "Payments", "Contacts", "Refunds", "Page text", "Guests", "Passes", "Volunteers", "Check-ins", "Email update", "Activity", "Tools", "Analytics"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_HELP: Record<Tab, string> = {
@@ -25,6 +27,7 @@ const TAB_HELP: Record<Tab, string> = {
   Refunds: "Who should get money back, who already has, and how it was sent.",
   "Page text": "Change any wording on the public landing page.",
   Guests: "Everyone holding a ticket. Search a guest or resend their ticket email.",
+  "Email update": "Send a stylish Project Y2K email to ticket holders or to people who have not bought yet.",
   Passes: "The kinds of ticket you sell: price, how many exist, and whether they are on sale.",
   Volunteers: "Staff logins. Volunteers can only scan tickets; admins can do everything.",
   "Check-ins": "The latest scans at the door, including refused ones.",
@@ -35,7 +38,7 @@ const TAB_HELP: Record<Tab, string> = {
 
 interface Summary {
   counts: { sold: number; capacity: number; held: number; left: number; comps: number; checked_in_tickets: number; checked_in_people: number; people_expected: number };
-  money: { gross: number; refunds: number; fees: number; net: number; owed: number };
+  money: { gross: number; refunds: number; fees: number; net: number; owed: number; inBank: number; bookingFees: number; todayPaise: number; todayPasses: number };
   needsRefund: { id: string; buyer_name: string; amount_paise: number }[];
   health: { pending_orders: number; awaiting_review: number; failed_emails: number; pending_emails: number; lastWebhook: string | null; fakePayments: boolean };
 }
@@ -44,7 +47,7 @@ interface Pass { id: string; name: string; description: string; pricePaise: numb
 
 const GROUPS: { title: string; items: { id: Tab; icon: string }[] }[] = [
   { title: "Daily work", items: [{ id: "Overview", icon: "grid" }, { id: "Payments", icon: "card" }, { id: "Refunds", icon: "undo" }, { id: "Guests", icon: "ticket" }, { id: "Check-ins", icon: "scan" }] },
-  { title: "Manage", items: [{ id: "Contacts", icon: "chat" }, { id: "Passes", icon: "tag" }, { id: "Volunteers", icon: "users" }, { id: "Page text", icon: "text" }, { id: "Tools", icon: "tool" }] },
+  { title: "Manage", items: [{ id: "Contacts", icon: "chat" }, { id: "Email update", icon: "mail" }, { id: "Passes", icon: "tag" }, { id: "Volunteers", icon: "users" }, { id: "Page text", icon: "text" }, { id: "Tools", icon: "tool" }] },
   { title: "More", items: [{ id: "Activity", icon: "list" }, { id: "Analytics", icon: "chart" }, { id: "Guide", icon: "book" }] },
 ];
 
@@ -91,12 +94,11 @@ export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: stri
             {(toVerify + toRefund) > 0 && <span aria-hidden="true" className="absolute right-1.5 top-1.5 size-2.5 rounded-full bg-crimson" />}
           </button>
           <span className="truncate text-base font-semibold">{tab}</span>
-          <span className="ml-auto flex items-center gap-2">{pills}</span>
         </div>
         <main className="mx-auto w-full max-w-[1100px] px-5 pb-12 pt-5 md:px-8 lg:pt-8">
-          <div className="hidden items-center justify-between gap-4 lg:flex">
-            <h1 className="text-2xl">{tab}</h1>
-            <div className="flex items-center gap-2">{pills}</div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 empty:hidden lg:min-h-11">
+            <h1 className="hidden text-2xl lg:block">{tab}</h1>
+            <div className="flex flex-wrap items-center gap-2">{pills}</div>
           </div>
           <p className="muted text-sm lg:mt-2">{TAB_HELP[tab]}</p>
           <div className="slide-up mt-4" key={tab}>
@@ -104,6 +106,7 @@ export function AdminApp({ name, isSuper, initialTab, focusOrder }: { name: stri
             {tab === "Guide" && <Guide start={startTour} />}
             {tab === "Payments" && <Payments focusOrder={focusOrder} />}
             {tab === "Contacts" && <Contacts />}
+            {tab === "Email update" && <EmailUpdate />}
             {tab === "Activity" && <Activity />}
             {tab === "Refunds" && <Refunds />}
             {tab === "Page text" && <PageText />}
@@ -167,14 +170,7 @@ function Overview({ go, onTour }: { go: (t: Tab) => void; onTour: () => void }) 
         <Stat k="Checked in (people)" v={`${s.counts.checked_in_people}/${s.counts.people_expected}`} tip="People scanned in at the door, out of everyone expected. A couple pass counts as 2 people." />
         <Stat k="Pending orders" v={s.health.pending_orders} tip="Buyers who chose a pass and are still inside their hold time but haven't sent a UTR and screenshot yet. Nothing to do for these." />
       </section>
-      <section data-tour="ov-money" aria-label="Collections" className="card-plain p-5">
-        <div className="flex flex-wrap gap-x-10 gap-y-5">
-          {([["Collected (tickets)", s.money.gross, "Money from approved UPI payments, one entry per issued ticket. Compare it with your bank statement."], ["Refunded", s.money.refunds, "Money you have already sent back and marked as refunded."], ["Still to refund", s.money.owed, "Money buyers paid that you still need to send back (people who paid but won't get a ticket)."]] as const).map(([k, v, t]) => (
-            <div key={k}><p className="label">{k} <Tip text={t} /></p><p className="tnum mt-1 text-2xl font-semibold">{paise(v)}</p></div>
-          ))}
-        </div>
-        <p className="muted mt-4 text-[13px]">Collected = approved UPI payments (tickets issued). Money you should be holding for this event ≈ collected + still to refund. Comp tickets ({s.counts.comps}) carry no money. Refunds are sent from your UPI app, then marked here.</p>
-      </section>
+      <Money m={s.money} sold={s.counts.sold} go={go} />
       {s.needsRefund.length > 0 && (
         <section className="card-plain p-5">
           <h2 className="text-lg">Refunds to send ({s.needsRefund.length})</h2>

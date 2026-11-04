@@ -16,6 +16,7 @@ const ICONS: Record<string, string> = {
   ticket: "M3 8a2 2 0 0 0 0 4v0a2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4v0a2 2 0 0 0 0-4V6H3zM14 6v12",
   scan: "M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16",
   chat: "M4 5h16v11H9l-5 4z",
+  mail: "M3 6h18v12H3zM3 7l9 7 9-7",
   tag: "M3 12V4h8l10 10-8 8zM7.5 8.5h.01",
   users: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M18 14a6 6 0 0 1 3 6",
   text: "M5 6h14M5 12h14M5 18h9",
@@ -56,7 +57,7 @@ function NavList({ groups, tab, badge, collapsed, pick }: { groups: NavGroup[]; 
                 <li key={it.id}>
                   <button data-tour={`tab-${it.id}`} onClick={() => pick(it.id)} aria-current={on ? "page" : undefined} title={collapsed ? it.label : undefined}
                     aria-label={n > 0 ? `${it.label}, ${n} ${it.id === "Payments" ? "to verify" : "need action"}` : undefined}
-                    className={`relative flex min-h-11 w-full items-center gap-3 rounded-sm border-l-2 px-3 text-left text-[15px] lg:min-h-10 transition-colors ${collapsed ? "justify-center" : ""} ${on ? "border-crimson bg-[var(--selected)] text-fg" : "muted border-transparent hover:bg-[var(--selected)] hover:text-fg"}`}>
+                    className={`relative flex min-h-11 w-full items-center gap-3 rounded-sm border-l-2 px-3 text-left text-[15px] lg:min-h-9 transition-colors ${collapsed ? "justify-center" : ""} ${on ? "border-crimson bg-[var(--selected)] text-fg" : "muted border-transparent hover:bg-[var(--selected)] hover:text-fg"}`}>
                     <Icon n={it.icon} />
                     {!collapsed && <span className="truncate">{it.label}</span>}
                     {n > 0 && <Count n={n} dot={collapsed} />}
@@ -76,7 +77,7 @@ function Footer({ name, collapsed, onTour }: { name: string; collapsed: boolean;
   return (
     <div className="border-t border-line px-2 py-2">
       <div data-tour="hdr-links">
-        {!collapsed && <p className="muted truncate px-3 pb-1 pt-1 text-[13px]">{name}</p>}
+        {!collapsed && <p className="muted truncate px-3 pb-1 pt-1 text-[13px] lg:hidden">{name}</p>}
         <button className={row} onClick={onTour} title={collapsed ? "Tour" : undefined}><Icon n="play" className="size-5 text-crimson" />{!collapsed && "Take the tour"}</button>
         <a href="/scan" className={row} title={collapsed ? "Scanner" : undefined}><Icon n="scan" />{!collapsed && "Scanner"}</a>
         <button className={`${row} muted`} title={collapsed ? "Sign out" : undefined}

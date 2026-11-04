@@ -27,7 +27,10 @@ export async function summary() {
       COALESCE((SELECT SUM(amount_paise) FROM payments WHERE status IN ('captured','refunded')), 0)::int AS gross,
       COALESCE((SELECT SUM(amount_paise) FROM refunds), 0)::int AS refunds,
       COALESCE((SELECT SUM(amount_paise) FROM orders WHERE status = 'needs_refund'), 0)::int AS refunds_owed,
-      COALESCE((SELECT SUM(fee_paise) FROM payments WHERE status IN ('captured','refunded')), 0)::int AS fees
+      COALESCE((SELECT SUM(fee_paise) FROM payments WHERE status IN ('captured','refunded')), 0)::int AS fees,
+      COALESCE((SELECT SUM(fee_paise) FROM orders WHERE status = 'paid'), 0)::int AS booking_fees,
+      COALESCE((SELECT SUM(amount_paise) FROM orders WHERE status = 'paid' AND paid_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'), 0)::int AS today_paise,
+      COALESCE((SELECT SUM(oi.qty) FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE o.status = 'paid' AND o.paid_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'), 0)::int AS today_passes
   `);
   const needsRefund = await query(
     `SELECT id, buyer_name, buyer_phone, amount_paise, created_at FROM orders WHERE status = 'needs_refund' ORDER BY created_at`,
@@ -41,7 +44,7 @@ export async function summary() {
       (SELECT max(received_at) FROM webhook_events) AS last_webhook`);
   return {
     counts: { ...c, left: Math.max(0, c.capacity - c.sold - c.held) },
-    money: { gross: c.gross, refunds: c.refunds, owed: c.refunds_owed, fees: c.fees, net: c.gross - c.fees, inBank: c.gross + c.refunds_owed },
+    money: { gross: c.gross, refunds: c.refunds, owed: c.refunds_owed, fees: c.fees, net: c.gross - c.fees, inBank: c.gross + c.refunds_owed, bookingFees: c.booking_fees, todayPaise: c.today_paise, todayPasses: c.today_passes },
     needsRefund,
     health: { ...h, db: true, lastWebhook: h.last_webhook ? new Date(h.last_webhook).toISOString() : null, fakePayments: fakePaymentsEnabled() },
   };

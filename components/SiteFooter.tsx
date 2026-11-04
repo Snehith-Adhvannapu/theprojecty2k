@@ -22,6 +22,7 @@ export function SiteFooter() {
             ["/privacy", "Privacy policy"],
             ["/contact", "Contact"],
             ["/find-ticket", "Find my ticket"],
+            ["/login", "Staff login"],
           ].map(([href, label]) => (
             <Link key={href} href={href} className="muted inline-flex min-h-11 items-center text-sm transition-colors hover:text-fg">
               {label}

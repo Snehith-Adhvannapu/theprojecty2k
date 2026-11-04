@@ -9,6 +9,7 @@ import { Logo } from "@/components/Logo";
 import { PassPicker } from "@/components/PassPicker";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StickyCta } from "@/components/StickyCta";
+import { WelcomeBack } from "@/components/WelcomeBack";
 
 // Static: built at deploy, zero DB calls on render. Availability arrives via PassPicker.
 export const dynamic = "force-static";
@@ -47,6 +48,7 @@ export default async function Home() {
           </nav>
         </div>
       </header>
+      <WelcomeBack />
 
       {/* HERO: the one place with theatre */}
       <section className="relative overflow-hidden">

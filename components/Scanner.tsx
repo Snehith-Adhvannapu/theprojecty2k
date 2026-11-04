@@ -192,6 +192,7 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
     try { await scannerRef.current?.toggleFlash(); setFlash(scannerRef.current?.isFlashOn() ? "on" : "off"); } catch { /* ignore */ }
   }
 
+  const [menu, setMenu] = useState(false);
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     window.location.href = "/login";
@@ -199,16 +200,31 @@ export function Scanner({ name, isAdmin }: { name: string; isAdmin: boolean }) {
 
   return (
     <div className="calm flex h-dvh flex-col bg-bg">
-      <header className="flex items-center justify-between gap-2 border-b border-line px-3.5 py-1 text-[13px]">
-        <span className="inline-flex items-center gap-2" role="status">
-          <span className="size-2 rounded-full" style={{ background: online ? "var(--state-online-dot)" : "var(--state-offline-bg)" }} aria-hidden="true" />
-          {online ? "Online" : "No connection"}
+      <header className="relative flex items-center justify-between gap-2 border-b border-line px-3.5 py-1 text-[13px]">
+        <span className="flex items-center gap-3">
+          {isAdmin && <a href="/admin" className="btn btn-quiet btn-calm inline-flex min-h-11 items-center gap-1.5 px-3 text-sm"><span aria-hidden="true">←</span> Admin</a>}
+          <span className="inline-flex items-center gap-2" role="status">
+            <span className="size-2 rounded-full" style={{ background: online ? "var(--state-online-dot)" : "var(--state-offline-bg)" }} aria-hidden="true" />
+            {online ? "Online" : "No connection"}
+          </span>
         </span>
-        <span className="muted flex items-center gap-3">
-          <span className="max-w-[28vw] truncate">{name}</span>
-          {isAdmin && <a href="/admin" className="inline-flex min-h-11 items-center border-b border-blood text-fg">Admin</a>}
-          <button onClick={signOut} className="inline-flex min-h-11 items-center text-fg underline-offset-4 hover:underline">Sign out</button>
+        <span className="muted flex items-center gap-2">
+          <span className="hidden max-w-[26vw] truncate sm:inline">{name}</span>
+          <button onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-haspopup="true" className="btn btn-quiet btn-calm inline-flex min-h-11 items-center gap-2 px-3 text-sm">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>Menu
+          </button>
         </span>
+        {menu && (
+          <>
+            <button aria-label="Close menu" className="fixed inset-0 z-30 cursor-default" onClick={() => setMenu(false)} />
+            <nav aria-label="Scanner menu" className="absolute right-3 top-full z-40 mt-1 flex w-[min(260px,90vw)] flex-col rounded-sm border border-line-strong bg-bg p-1.5">
+              <button className="min-h-12 rounded-sm px-3 text-left text-[15px] text-fg hover:bg-[var(--selected)]" onClick={() => { setMode("camera"); setMenu(false); }}>Scan QR codes</button>
+              <button className="min-h-12 rounded-sm px-3 text-left text-[15px] text-fg hover:bg-[var(--selected)]" onClick={() => { setMode("lookup"); setMenu(false); }}>Find guest by name or code</button>
+              {isAdmin && <a href="/admin" className="inline-flex min-h-12 items-center rounded-sm px-3 text-[15px] text-fg hover:bg-[var(--selected)]">Back to admin</a>}
+              <button className="min-h-12 rounded-sm border-t border-line px-3 text-left text-[15px] text-fg hover:bg-[var(--selected)]" onClick={signOut}>Sign out</button>
+            </nav>
+          </>
+        )}
       </header>
 
       {mode === "camera" ? (

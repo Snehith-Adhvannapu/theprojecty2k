@@ -12,6 +12,36 @@ interface Row {
   amountPaise: number; utr: string | null; submittedAt: string | null; reviewNote: string | null; hasProof: boolean; ticketToken: string | null; canReverse: boolean;
 }
 interface Queue { pending: Row[]; reviewed: Row[] }
+/** What the approval pop-up shows: who, whether the email went, and the ticket links to send on WhatsApp. */
+interface Approved { name: string; phone: string; email: string; emailSent: boolean; tokens: string[] }
+type ApproveRes = { result: string; emailSent?: boolean; tokens?: string[] };
+
+const toApproved = (r: Row, x: ApproveRes): Approved => ({ name: r.buyerName, phone: r.buyerPhone, email: r.buyerEmail, emailSent: !!x.emailSent, tokens: x.tokens ?? [] });
+const waTicket = (a: Approved) => {
+  const links = a.tokens.map((t) => `${window.location.origin}/t/${t}`);
+  const lead = links.length > 1 ? "Your tickets (QR + PDF):" : "Open your ticket (QR + PDF):";
+  const text = [`Hi ${a.name}, your Project Y2K ticket is confirmed.`, lead, ...links, "Show the QR at the door. See you on 15 Nov!"].join("\n");
+  return `https://wa.me/${a.phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+};
+
+function ApprovedDialog({ a, onClose }: { a: Approved; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-4 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="ap-t">
+      <div className="card w-full max-w-md p-6">
+        <h2 id="ap-t" className="text-xl">Approved</h2>
+        <p className="mt-3 text-[15px]">{a.name}&apos;s {a.tokens.length > 1 ? `${a.tokens.length} tickets are` : "ticket is"} ready.</p>
+        <p className={`mt-3 rounded-sm border p-3 text-[15px] ${a.emailSent ? "border-line" : "border-danger"}`} role="status">
+          {a.emailSent ? <>Email with the PDF ticket sent to <strong className="break-all font-semibold">{a.email}</strong>.</> : <>The email has not gone out yet. It will retry on its own. You can send the ticket on WhatsApp now.</>}
+        </p>
+        <p className="muted mt-3 text-sm">Want them to have it faster? Send it on WhatsApp too. The message holds the link to the ticket with the QR code and PDF.</p>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          {a.tokens.length > 0 && a.phone && <a className="btn btn-primary btn-calm min-h-11 flex-1 px-5" href={waTicket(a)} target="_blank" rel="noreferrer">Send on WhatsApp</a>}
+          <button className="btn btn-quiet btn-calm min-h-11 flex-1 px-5" onClick={onClose} autoFocus>Done</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const wa = (phone: string, name: string, token: string) => {
   const url = `${window.location.origin}/t/${token}`;
@@ -56,6 +86,7 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
   const [q, setQ] = useState<Queue | null>(null);
   const [err, setErr] = useState("");
   const [tpls, setTpls] = useState<WaTemplates>(WA_DEFAULTS);
+  const [approved, setApproved] = useState<Approved | null>(null);
   useEffect(() => { fetch("/api/admin/templates", { cache: "no-store" }).then((r) => r.json()).then((j) => { if (j?.ok) setTpls(j.data); }).catch(() => {}); }, []);
   const load = useCallback(async () => {
     try { setQ(await api<Queue>("/api/admin/payments")); setErr(""); } catch (e) { setErr(e instanceof Error ? e.message : "Failed"); }
@@ -73,12 +104,13 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
   if (!q) return <div className="skeleton h-64" aria-busy="true" />;
   return (
     <div className="flex flex-col gap-4">
+      {approved && <ApprovedDialog a={approved} onClose={() => setApproved(null)} />}
       <div data-tour="pay-head" className="flex items-baseline justify-between gap-3">
         <h2 className="flex items-center gap-1.5 text-lg">To verify <span className="muted tnum">({q.pending.length})</span><Tip text="Buyers who paid and sent a UTR (12-digit UPI reference) and a screenshot. Open your bank statement and look for that exact UTR and amount before you approve." /></h2>
         <button className="muted inline-flex min-h-11 items-center text-sm hover:text-fg" onClick={load}>Refresh</button>
       </div>
       {q.pending.length === 0 && <p className="card-plain muted p-5 text-sm">Nothing waiting. New payments show up here as soon as buyers submit their UTR.</p>}
-      {q.pending.map((r, ri) => <Pending key={r.id} r={r} first={ri === 0} done={load} focus={r.id === focusOrder} tpls={tpls} onSaved={setTpls} />)}
+      {q.pending.map((r, ri) => <Pending key={r.id} r={r} first={ri === 0} done={load} focus={r.id === focusOrder} tpls={tpls} onSaved={setTpls} onApproved={(x) => setApproved(toApproved(r, x))} />)}
 
       {q.reviewed.length > 0 && (
         <section data-tour="pay-reviewed" className="mt-4">
@@ -95,7 +127,7 @@ export function Payments({ focusOrder }: { focusOrder?: string }) {
                   <span className={r.status === "paid" ? "" : "text-crimson"}>{r.status === "paid" ? "Approved" : r.status === "needs_refund" ? "Refund owed" : "Rejected"}</span>
                   {r.hasProof && <a className="inline-flex min-h-11 items-center border-b border-blood" href={`/api/admin/orders/${r.id}/proof`} target="_blank" rel="noreferrer">Screenshot</a>}
                   {r.ticketToken && <a className="inline-flex min-h-11 items-center border-b border-blood" href={wa(r.buyerPhone, r.buyerName, r.ticketToken)} target="_blank" rel="noreferrer">Send on WhatsApp</a>}
-                  {r.canReverse && <Reverse r={r} done={load} />}
+                  {r.canReverse && <Reverse r={r} done={load} onApproved={(x) => setApproved(toApproved(r, x))} />}
                   {r.canReverse && <Owe r={r} done={load} />}
                   {r.status !== "paid" && r.buyerPhone && <a className="inline-flex min-h-11 items-center border-b border-blood" href={`tel:${r.buyerPhone}`}>Call</a>}
                   {r.status !== "paid" && r.status !== "needs_refund" && <a className="inline-flex min-h-11 items-center border-b border-blood" href={waConfirm(r.buyerPhone, r.buyerName, r.amountPaise, r.utr)} target="_blank" rel="noreferrer">WhatsApp to confirm</a>}
@@ -123,14 +155,15 @@ function Owe({ r, done }: { r: Row; done: () => void }) {
 }
 
 /** Change a rejection to approved after the buyer confirmed. Issues and emails the ticket. */
-function Reverse({ r, done }: { r: Row; done: () => void }) {
+function Reverse({ r, done, onApproved }: { r: Row; done: () => void; onApproved: (x: ApproveRes) => void }) {
   const [step, setStep] = useState<"idle" | "confirm" | "busy">("idle");
   const [msg, setMsg] = useState("");
   async function go() {
     setStep("busy"); setMsg("");
     try {
-      const x = await api<{ result: string }>(`/api/admin/orders/${r.id}/approve`, {});
+      const x = await api<ApproveRes>(`/api/admin/orders/${r.id}/approve`, {});
       if (x.result === "needs_refund") throw new Error("Passes sold out in the meantime. Marked as needing a refund.");
+      onApproved(x);
       await done();
     } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); setStep("idle"); }
   }
@@ -149,7 +182,7 @@ function Reverse({ r, done }: { r: Row; done: () => void }) {
   );
 }
 
-function Pending({ r, done, focus, first, tpls, onSaved }: { r: Row; done: () => void; focus: boolean; first?: boolean; tpls: WaTemplates; onSaved: (t: WaTemplates) => void }) {
+function Pending({ r, done, focus, first, tpls, onSaved, onApproved }: { r: Row; done: () => void; focus: boolean; first?: boolean; tpls: WaTemplates; onSaved: (t: WaTemplates) => void; onApproved: (x: ApproveRes) => void }) {
   const [mode, setMode] = useState<"idle" | "confirm" | "reject">("idle");
   const [reason, setReason] = useState("");
   const [kind, setKind] = useState<WaKind>("fix");
@@ -167,8 +200,9 @@ function Pending({ r, done, focus, first, tpls, onSaved }: { r: Row; done: () =>
     try { await fn(); await done(); } catch (e) { setMsg(e instanceof Error ? e.message : "Failed"); setBusy(false); }
   }
   const approve = () => run(async () => {
-    const r2 = await api<{ result: string }>(`/api/admin/orders/${r.id}/approve`, {});
+    const r2 = await api<ApproveRes>(`/api/admin/orders/${r.id}/approve`, {});
     if (r2.result === "needs_refund") throw new Error("Passes sold out in the meantime. Marked as needing a refund; refund this buyer.");
+    onApproved(r2);
   });
   const pick = (k: WaKind) => { setKind(k); setDraft(null); setSaved(false); };
   // Open WhatsApp from the tap itself (phones block pop-ups opened after a wait); point it at the message once the rejection succeeds.

@@ -18,6 +18,7 @@ export function SiteFooter() {
         </div>
         <nav aria-label="Policies" className="flex min-w-48 flex-1 flex-col">
           {[
+            ["/the-matrix", "Event details"],
             ["/terms", "Terms & conditions"],
             ["/privacy", "Privacy policy"],
             ["/contact", "Contact"],

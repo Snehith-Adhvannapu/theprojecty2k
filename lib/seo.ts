@@ -26,7 +26,7 @@ export const SEO_KEYWORDS = [
 const instagramUrl = () => `https://www.instagram.com/${e.organiser.instagram.replace(/^@/, "")}`;
 
 /** schema.org graph: the Event (so it can appear as an event result), the organiser and the site. */
-export function structuredData(prices: { low: number; high: number; count: number } | null) {
+export function structuredData(prices: { low: number; high: number; count: number; passes?: { name: string; price: number }[] } | null) {
   const ogImage = `${SITE_URL}/images/og-tickets-v2.jpg`;
   return {
     "@context": "https://schema.org",
@@ -51,12 +51,12 @@ export function structuredData(prices: { low: number; high: number; count: numbe
         "@type": "Event",
         "@id": `${SITE_URL}/#event`,
         name: `${e.name}: The Matrix`,
-        description: "Hyderabad's first theatre rave: music, visuals and sound on the big screen.",
+        description: `Project Y2K: The Matrix is Hyderabad's first theatre rave, presented by Project Y2K and Hyd High on ${e.dateLabel}. Music, visuals and sound on the big screen. Official tickets are sold at projecty2k.com.`,
         startDate: `${e.date}T12:00:00+05:30`,
         endDate: `${e.date}T17:00:00+05:30`,
         eventStatus: "https://schema.org/EventScheduled",
         eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-        image: [ogImage, `${SITE_URL}/images/hero-poster.webp`],
+        image: [ogImage, `${SITE_URL}/images/hero-poster-v2.webp`],
         url: SITE_URL,
         isAccessibleForFree: false,
         inLanguage: "en-IN",
@@ -69,15 +69,27 @@ export function structuredData(prices: { low: number; high: number; count: numbe
         organizer: { "@id": `${SITE_URL}/#organiser` },
         ...(prices && prices.count > 0
           ? {
-              offers: {
-                "@type": "AggregateOffer",
-                url: `${SITE_URL}/#passes`,
-                priceCurrency: "INR",
-                lowPrice: String(prices.low / 100),
-                highPrice: String(prices.high / 100),
-                offerCount: prices.count,
-                availability: "https://schema.org/InStock",
-              },
+              offers: [
+                {
+                  "@type": "AggregateOffer",
+                  url: `${SITE_URL}/#passes`,
+                  priceCurrency: "INR",
+                  lowPrice: String(prices.low / 100),
+                  highPrice: String(prices.high / 100),
+                  offerCount: prices.count,
+                  availability: "https://schema.org/InStock",
+                  seller: { "@id": `${SITE_URL}/#organiser` },
+                },
+                ...(prices.passes ?? []).map((p) => ({
+                  "@type": "Offer",
+                  name: p.name,
+                  url: `${SITE_URL}/#passes`,
+                  price: String(p.price / 100),
+                  priceCurrency: "INR",
+                  availability: "https://schema.org/InStock",
+                  seller: { "@id": `${SITE_URL}/#organiser` },
+                })),
+              ],
             }
           : {}),
       },

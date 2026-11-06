@@ -26,7 +26,8 @@ const photos = [
 async function passPrices() {
   try {
     const [r] = await query("SELECT min(price_paise)::int AS low, max(price_paise)::int AS high, count(*)::int AS n FROM pass_types WHERE active");
-    return r && r.n > 0 ? { low: r.low as number, high: r.high as number, count: r.n as number } : null;
+    const passes = await query("SELECT name, price_paise FROM pass_types WHERE active ORDER BY sort, price_paise");
+    return r && r.n > 0 ? { low: r.low as number, high: r.high as number, count: r.n as number, passes: passes.map((p) => ({ name: p.name as string, price: p.price_paise as number })) } : null;
   } catch {
     return null; // no DB at build time: leave the price out rather than guess
   }

@@ -23,9 +23,10 @@ export const eventConfig = {
   musicFrom: "1:00 PM",
   musicUntil: "5:00 PM",
   venue: {
-    name: "Prasad's IMAX",
-    address: "Hyderabad",
-    mapUrl: "https://maps.app.goo.gl/cVJ1G3j6faKFnfRw8",
+    // Generic until the venue is announced. No map link, so the map buttons stay hidden everywhere.
+    name: "A theatre in Hyderabad",
+    address: "",
+    mapUrl: "",
   },
   ageLimit: "No age limit",
   dressCode: "Dark colours (preferably black)",

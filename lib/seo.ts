@@ -17,17 +17,17 @@ export function isIndexableHost(): boolean {
 
 export const SEO_TITLE = "Project Y2K: The Matrix | Hyderabad Theatre Rave 15 Nov 2026";
 export const SEO_DESCRIPTION =
-  `The Matrix is Hyderabad's first theatre rave: ${e.dateLabel} at ${e.venue.name}. Electrifying beats, immersive visuals and big-screen sound. Get your pass.`;
+  `The Matrix is Hyderabad's first theatre rave: ${e.dateLabel} at a theatre in Hyderabad. Electrifying beats, immersive visuals and big-screen sound. Get your pass.`;
 export const SEO_KEYWORDS = [
   "Hyderabad theatre rave", "theatre rave Hyderabad", "Project Y2K", "Project Y2K The Matrix", "The Matrix party Hyderabad",
-  "Prasad's IMAX party", "Hyderabad party 15 November 2026", "Hyderabad music event", "Y2K party Hyderabad",
+  "Hyderabad party 15 November 2026", "Hyderabad music event", "Y2K party Hyderabad",
 ];
 
 const instagramUrl = () => `https://www.instagram.com/${e.organiser.instagram.replace(/^@/, "")}`;
 
 /** schema.org graph: the Event (so it can appear as an event result), the organiser and the site. */
 export function structuredData(prices: { low: number; high: number; count: number } | null) {
-  const ogImage = `${SITE_URL}/images/og-tickets.jpg`;
+  const ogImage = `${SITE_URL}/images/og-tickets-v2.jpg`;
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -51,7 +51,7 @@ export function structuredData(prices: { low: number; high: number; count: numbe
         "@type": "Event",
         "@id": `${SITE_URL}/#event`,
         name: `${e.name}: The Matrix`,
-        description: "Hyderabad's first theatre rave: music, visuals and sound on the big screen at Prasad's IMAX.",
+        description: "Hyderabad's first theatre rave: music, visuals and sound on the big screen.",
         startDate: `${e.date}T12:00:00+05:30`,
         endDate: `${e.date}T17:00:00+05:30`,
         eventStatus: "https://schema.org/EventScheduled",
@@ -63,7 +63,7 @@ export function structuredData(prices: { low: number; high: number; count: numbe
         location: {
           "@type": "Place",
           name: e.venue.name,
-          hasMap: e.venue.mapUrl,
+          ...(e.venue.mapUrl ? { hasMap: e.venue.mapUrl } : {}),
           address: { "@type": "PostalAddress", addressLocality: "Hyderabad", addressRegion: "Telangana", addressCountry: "IN" },
         },
         organizer: { "@id": `${SITE_URL}/#organiser` },

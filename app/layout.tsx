@@ -14,9 +14,9 @@ const manrope = Manrope({ weight: ["400", "500", "600", "800"], subsets: ["latin
 
 // Link-preview text (WhatsApp, Instagram, iMessage). Same on every page so a shared link always looks the same.
 const SOCIAL_TITLE = "Project Y2K presents The Matrix: tickets on sale";
-const SOCIAL_DESC = "Party coming soon. Get your tickets for Hyderabad's first theatre rave: 15 November 2026 at Prasad's IMAX.";
+const SOCIAL_DESC = "Party coming soon. Get your tickets for Hyderabad's first theatre rave: 15 November 2026.";
 
-const OG_IMAGE = { url: "/images/og-tickets.jpg", width: 1200, height: 630, alt: "Poster: Project Y2K presents The Matrix, Hyderabad's first theatre rave, 15 November 2026" };
+const OG_IMAGE = { url: "/images/og-tickets-v2.jpg", width: 1200, height: 630, alt: "Poster: Project Y2K presents The Matrix, Hyderabad's first theatre rave, 15 November 2026" };
 
 export const metadata: Metadata = {
   // Always the real domain, so a test host (aws.*) never advertises itself as the canonical address.

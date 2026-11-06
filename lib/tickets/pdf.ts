@@ -66,7 +66,7 @@ export async function ticketPdf(t: PdfTicket): Promise<Uint8Array> {
     page.drawText(s === v ? s : s + "…", { x, y: stripY + 13, size: 9.5, font: strong, color: FG });
   });
   // Venue column links to Google Maps (the QR itself stays token-only).
-  {
+  if (e.venue.mapUrl) {
     const x0 = M + 2 * colW;
     const link = doc.context.register(doc.context.obj({
       Type: "Annot", Subtype: "Link", Rect: [x0, stripY, W - M, stripY + 44], Border: [0, 0, 0],

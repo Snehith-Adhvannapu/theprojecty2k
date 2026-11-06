@@ -13,7 +13,7 @@ function calendarHref() {
     "UID:the-matrix-2026-11-15@projecty2k.com", "DTSTAMP:20261103T000000Z",
     `DTSTART:${IST_NOON}`, `DTEND:${IST_FIVE}`,
     `SUMMARY:${e.name}: The Matrix`,
-    `LOCATION:${e.venue.name}\\, ${e.venue.address}`,
+    `LOCATION:${[e.venue.name, e.venue.address].filter(Boolean).join("\\, ")}`,
     `DESCRIPTION:Doors ${e.doorsOpen}. Carry a valid government photo ID. Show your ticket QR at the door.`,
     "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");

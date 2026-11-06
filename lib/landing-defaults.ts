@@ -45,7 +45,7 @@ export function landingDefaults(): Landing {
       { label: "Date", value: e.dateLabel },
       { label: "Doors", value: e.doorsOpen },
       { label: "Music", value: `${e.musicFrom} to ${e.musicUntil}` },
-      { label: "Venue", value: `${e.venue.name}, ${e.venue.address}` },
+      { label: "Venue", value: [e.venue.name, e.venue.address].filter(Boolean).join(", ") },
       { label: "Age", value: e.ageLimit },
       { label: "Dress", value: e.dressCode },
     ],
@@ -59,7 +59,7 @@ export function landingDefaults(): Landing {
       eyebrow: "About",
       heading: "Who's *behind it.*",
       paras: [
-        `Project Y2K is a party series. Y2K 1.0, The Index, was held at Illuzion. This year it's The Matrix: Hyderabad's first theatre rave, at ${e.venue.name}.`,
+        `Project Y2K is a party series. Y2K 1.0, The Index, was held at Illuzion. This year it's The Matrix: Hyderabad's first theatre rave, at ${e.venue.name.toLowerCase()}.`,
         `${e.organiser.name} · WhatsApp ${e.organiser.whatsapp} · ${e.organiser.instagram}`,
       ],
     },

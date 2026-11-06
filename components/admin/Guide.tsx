@@ -8,7 +8,7 @@ interface Plan { id: string; when: string; items: string[] }
 
 const PLAN: Plan[] = [
   { id: "before", when: "Before ticket sales open", items: [
-    "Passes tab: check each pass's name, price, total quantity and who it admits (1 = single, 2 = couple).",
+    "Passes tab: check each pass's name, price, total quantity and how many people it is for (1 = single, 2 = couple). Each person gets their own ticket.",
     "Passes tab: set Sales open and Sales close times if a pass should start or stop by itself.",
     "Page text tab: read every section of the landing page once and fix any wording.",
     "Volunteers tab: create a login for each door volunteer and send it to them privately.",

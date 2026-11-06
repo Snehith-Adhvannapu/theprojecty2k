@@ -3,7 +3,7 @@
 // there is no sweeper job. Reservations lock the pass-type rows (FOR UPDATE, in id
 // order to avoid deadlocks) so concurrent buyers serialise per pass type.
 import { eventConfig } from "@/config/event";
-import { normalizeInstagram } from "@/lib/normalize";
+import { cleanPerson, type Person } from "@/lib/normalize";
 import { AppError, isUniqueViolation } from "@/lib/errors";
 import { query, transaction, type Q } from "@/lib/db";
 import { getSales } from "@/lib/sales";
@@ -62,8 +62,8 @@ export interface ReserveInput {
   items: { passTypeId: string; qty: number }[];
   buyer: { name: string; phone: string; email: string; instagram: string | null };
   idempotencyKey: string;
-  /** Handles for everyone on the order except the buyer. When given, there must be one per person (checkout always sends it). */
-  guestInstagrams?: string[];
+  /** Everyone on the order except the buyer, in ticket order. When given there must be one per extra person (checkout always sends it). */
+  guests?: Person[];
 }
 
 export interface ReservedOrder {
@@ -147,22 +147,22 @@ export async function reserveOrder(input: ReserveInput): Promise<ReservedOrder> 
         amount += bf; fee += bf;
       }
 
-      // Everyone on the order gets a handle: the buyer plus one per extra person (a couple pass admits two).
-      let guests: string[] | null = null;
-      if (input.guestInstagrams !== undefined && eventConfig.requireGuestInstagram) {
+      // Everyone on the order is a person with a name, email, phone and Instagram: the buyer plus one per extra person (a couple pass is two people).
+      let guests: Person[] | null = null;
+      if (input.guests !== undefined && eventConfig.requireGuestInstagram) {
         const people = lines.reduce((n, l) => n + l.qty * Number(byId.get(l.passTypeId)!.admits), 0);
-        guests = input.guestInstagrams.map((g) => normalizeInstagram(g)).filter((g): g is string => !!g);
+        guests = input.guests.map((g) => cleanPerson(g)).filter((g): g is Person => !!g);
         if (guests.length !== people - 1) {
-          throw new AppError("GUESTS_REQUIRED", people - 1 === 1 ? "Add the Instagram handle of the other person." : `Add an Instagram handle for each of the other ${people - 1} people.`, 400);
+          throw new AppError("GUESTS_REQUIRED", people - 1 === 1 ? "Add the name, email, phone and Instagram of the other person." : `Add the name, email, phone and Instagram of each of the other ${people - 1} people.`, 400);
         }
       }
 
       const [order] = await q.query(
         `INSERT INTO orders (event_id, buyer_name, buyer_phone, buyer_email, buyer_instagram,
-                             idempotency_key, amount_paise, fee_paise, expires_at, guest_instagrams)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8, now() + make_interval(mins => $9), $10::jsonb) RETURNING *`,
+                             idempotency_key, amount_paise, fee_paise, expires_at, guest_instagrams, guest_people)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8, now() + make_interval(mins => $9), $10::jsonb, $11::jsonb) RETURNING *`,
         [event.id, input.buyer.name, input.buyer.phone, input.buyer.email, input.buyer.instagram,
-          input.idempotencyKey, amount, fee, holdMinutes, guests ? JSON.stringify(guests) : null],
+          input.idempotencyKey, amount, fee, holdMinutes, guests ? JSON.stringify(guests.map((g) => g.instagram)) : null, guests ? JSON.stringify(guests) : null],
       );
       for (const l of lines) {
         const p = byId.get(l.passTypeId)!;

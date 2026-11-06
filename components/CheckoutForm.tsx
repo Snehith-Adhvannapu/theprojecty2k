@@ -5,7 +5,7 @@ import { rememberOrder } from "@/lib/myOrders";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { eventConfig as e } from "@/config/event";
-import { GuestHandles } from "@/components/GuestHandles";
+import { emptyPerson, PeopleCards, type PersonDraft, type PersonErrors } from "@/components/PeopleCards";
 import { normalizeEmail, normalizeInstagram, normalizePhone, paise } from "@/lib/normalize";
 
 interface Pass {
@@ -30,10 +30,11 @@ export function CheckoutForm() {
   const [bookingFee, setBookingFee] = useState<number>(e.bookingFeePaise);
   const [qty, setQty] = useState(1);
   const [f, setF] = useState<Fields>({ name: "", phone: "", email: "", instagram: "" });
-  const [guests, setGuests] = useState<string[]>([]);
-  const [badGuests, setBadGuests] = useState<boolean[]>([]);
+  const [guests, setGuests] = useState<PersonDraft[]>([]);
+  const [guestErrs, setGuestErrs] = useState<PersonErrors[]>([]);
   const [accepted, setAccepted] = useState(false);
-  const [errs, setErrs] = useState<Partial<Record<keyof Fields | "accepted" | "guests", string>>>({});
+  const [permission, setPermission] = useState(false);
+  const [errs, setErrs] = useState<Partial<Record<keyof Fields | "accepted" | "permission", string>>>({});
   const [phase, setPhase] = useState<Phase>("idle");
   const [message, setMessage] = useState("");
   const attempt = useRef({ key: crypto.randomUUID(), sig: "" });
@@ -43,18 +44,18 @@ export function CheckoutForm() {
   useEffect(() => {
     try {
       const d = JSON.parse(sessionStorage.getItem(STORE) ?? "null");
-      if (d) setF((cur) => ({ ...cur, ...d.f }));
+      if (d) { setF((cur) => ({ ...cur, ...d.f })); if (Array.isArray(d.guests)) setGuests(d.guests); }
     } catch { /* storage unavailable: fine */ }
   }, []);
   useEffect(() => {
-    try { sessionStorage.setItem(STORE, JSON.stringify({ f })); } catch { /* ignore */ }
-  }, [f]);
+    try { sessionStorage.setItem(STORE, JSON.stringify({ f, guests })); } catch { /* ignore */ }
+  }, [f, guests]);
 
   // One handle for every person except the buyer. The boxes grow and shrink with the quantity and keep what was typed.
   const others = e.requireGuestInstagram && pass ? Math.max(0, qty * pass.admits - 1) : 0;
   useEffect(() => {
-    setGuests((g) => (g.length === others ? g : Array.from({ length: others }, (_, i) => g[i] ?? "")));
-    setBadGuests([]);
+    setGuests((g) => (g.length === others ? g : Array.from({ length: others }, (_, i) => g[i] ?? emptyPerson())));
+    setGuestErrs([]);
   }, [others]);
 
   useEffect(() => {
@@ -86,12 +87,21 @@ export function CheckoutForm() {
     if (!/^\S+@\S+\.\S+$/.test(normalizeEmail(f.email))) x.email = "Enter a valid email address";
     if (!f.instagram.trim()) x.instagram = "Enter your Instagram handle";
     else if (!normalizeInstagram(f.instagram)) x.instagram = "That doesn't look like an Instagram handle";
-    const bg = guests.map((g) => !normalizeInstagram(g));
-    setBadGuests(bg);
-    if (bg.some(Boolean)) x.guests = "Add an Instagram handle for every guest.";
+    const ge = guests.map((g): PersonErrors => {
+      const r: PersonErrors = {};
+      if (g.name.trim().length < 2) r.name = "Enter their full name";
+      if (!/^\S+@\S+\.\S+$/.test(normalizeEmail(g.email))) r.email = "Enter a valid email address";
+      if (!normalizePhone(g.phone)) r.phone = "Enter a valid 10-digit mobile number";
+      if (!g.instagram.trim()) r.instagram = "Enter their Instagram handle";
+      else if (!normalizeInstagram(g.instagram)) r.instagram = "That doesn't look like an Instagram handle";
+      return r;
+    });
+    setGuestErrs(ge);
+    const badGuest = ge.some((r) => Object.keys(r).length > 0);
+    if (others > 0 && !permission) x.permission = "Please confirm this to continue";
     if (!accepted) x.accepted = "Please accept the terms to continue";
     setErrs(x);
-    return Object.keys(x).length === 0;
+    return Object.keys(x).length === 0 && !badGuest;
   }
 
   async function pay() {
@@ -106,11 +116,11 @@ export function CheckoutForm() {
     setPhase("starting");
     try {
       // Same details + same tap = same idempotency key (double-tap safe). Any change = a new order.
-      const sig = JSON.stringify([pass.id, qty, f, guests, accepted]);
+      const sig = JSON.stringify([pass.id, qty, f, guests, accepted, permission]);
       if (attempt.current.sig !== sig) attempt.current = { key: crypto.randomUUID(), sig };
       const order = await post("/api/orders", {
         passTypeId: pass.id, qty, name: f.name, phone: f.phone, email: f.email,
-        instagram: f.instagram, guests, idempotencyKey: attempt.current.key, accepted: true,
+        instagram: f.instagram, guests, permission, idempotencyKey: attempt.current.key, accepted: true,
       });
       rememberOrder(order.id);
       router.push(`/order/${order.id}`);
@@ -146,7 +156,7 @@ export function CheckoutForm() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-lg font-semibold">{pass.name}</p>
-              <p className="muted mt-1 text-sm">Admits {pass.admits} · {paise(pass.pricePaise)} each{" "}<Tip text={pass.admits > 1 ? `One ticket lets ${pass.admits} people in. You get one QR code, and it is scanned once at the door for everyone on it.` : "One ticket lets one person in. Buying 2 gives you 2 separate tickets."} /></p>
+              <p className="muted mt-1 text-sm">Admits {pass.admits} · {paise(pass.pricePaise)} each{" "}<Tip text={pass.admits > 1 ? `This pass is for ${pass.admits} people. Each person gets their own ticket and QR code, so you can arrive at different times.` : "One ticket lets one person in. Buying 2 gives you 2 separate tickets."} /></p>
             </div>
             <div className="flex items-center gap-1" role="group" aria-label="Quantity">
               <button type="button" className="btn btn-quiet btn-calm size-11 min-h-11 p-0 text-xl" aria-label="Fewer passes" disabled={qty <= 1 || busy} onClick={() => setQty(qty - 1)}>−</button>
@@ -160,8 +170,8 @@ export function CheckoutForm() {
 
       <form noValidate onSubmit={(ev) => { ev.preventDefault(); pay(); }}>
         <section aria-labelledby="h-details" className="mt-8">
-          <h2 id="h-details" className="label">Your details</h2>
-          <p className="muted mt-2 text-sm">One set of details covers the whole order. Your ticket and receipt go to this email.</p>
+          <h2 id="h-details" className="label">{others > 0 ? "You (Person 1)" : "Your details"}</h2>
+          <p className="muted mt-2 text-sm">{others > 0 ? "You are the buyer. Your receipt and all the tickets are emailed to you." : "Your ticket and receipt are emailed to you."}</p>
           <div className="mt-4 flex flex-col gap-4">
             <Input id="f-name" label="Full name" tip="Write your name exactly as on your photo ID. It is printed on your ticket and checked at the door." err={errs.name} value={f.name} onChange={set("name")} disabled={busy} autoComplete="name" placeholder="As on your ID" />
             <div className="flex flex-col gap-1.5">
@@ -178,7 +188,7 @@ export function CheckoutForm() {
           </div>
         </section>
 
-        {others > 0 && <GuestHandles values={guests} onChange={(v) => { setGuests(v); if (badGuests.some(Boolean)) setBadGuests([]); }} bad={badGuests} disabled={busy} />}
+        {others > 0 && <PeopleCards values={guests} onChange={(v) => { setGuests(v); if (guestErrs.length) setGuestErrs([]); }} errors={guestErrs} disabled={busy} />}
 
         <section aria-labelledby="h-sum" className="mt-8">
           <h2 id="h-sum" className="label flex items-center gap-1.5">Order summary<Tip text="Nothing is charged on this page. Next you will pay by UPI in your own app, then send us the proof." /></h2>
@@ -190,6 +200,17 @@ export function CheckoutForm() {
             <div className="flex items-baseline justify-between gap-4"><span className="font-semibold">Total (INR)</span><span className="text-2xl font-semibold">{paise(money.total)}</span></div>
           </div>
         </section>
+
+        {others > 0 && (
+          <div className="mt-6">
+            <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm">
+              <input type="checkbox" className="mt-1 size-5 shrink-0 accent-[var(--blood)]" checked={permission} disabled={busy}
+                onChange={(ev) => { setPermission(ev.target.checked); setErrs((x) => ({ ...x, permission: undefined })); }} aria-invalid={!!errs.permission} />
+              <span>I have these people&apos;s permission to share their details, and to email them their ticket.</span>
+            </label>
+            {errs.permission && <p className="field-error mt-1" role="alert">{errs.permission}</p>}
+          </div>
+        )}
 
         <div className="mt-6">
           <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm">

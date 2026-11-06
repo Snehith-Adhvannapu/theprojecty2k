@@ -32,6 +32,19 @@ export function parseHandles(text: string): string[] {
 
 export const normalizeEmail = (raw: string) => raw.trim().toLowerCase();
 
+/** Everyone on an order is a person with their own ticket: name, email, phone and Instagram. */
+export interface Person { name: string; email: string; phone: string; instagram: string }
+
+/** Cleans one person from raw input. Returns null if any of the four is missing or malformed. */
+export function cleanPerson(p: { name?: string; email?: string; phone?: string; instagram?: string }): Person | null {
+  const name = (p.name ?? "").trim().replace(/\s+/g, " ");
+  const email = normalizeEmail(p.email ?? "");
+  const phone = normalizePhone(p.phone ?? "");
+  const instagram = normalizeInstagram(p.instagram);
+  if (name.length < 2 || name.length > 80 || !/^\S+@\S+\.\S+$/.test(email) || email.length > 120 || !phone || !instagram) return null;
+  return { name, email, phone, instagram };
+}
+
 export const paise = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })
     .format(n / 100)

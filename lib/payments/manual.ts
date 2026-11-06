@@ -5,7 +5,7 @@ import { z } from "zod";
 import { AppError, isUniqueViolation } from "@/lib/errors";
 import { query, transaction, type Q } from "@/lib/db";
 import { availability } from "@/lib/inventory";
-import { issueTicketsForOrder, ticketsForOrder } from "@/lib/tickets";
+import { issueTicketsForOrder, queueTicketEmails, ticketsForOrder } from "@/lib/tickets";
 import { storeProof } from "@/lib/proof";
 import { eventConfig } from "@/config/event";
 
@@ -90,7 +90,7 @@ export async function approveOrder(orderId: string, staffId: string): Promise<Re
       throw e;
     }
     await issueTicketsForOrder(q, orderId);
-    await q.query("INSERT INTO email_outbox (order_id, to_email, kind) VALUES ($1,$2,'ticket')", [orderId, o.buyer_email]);
+    await queueTicketEmails(q, orderId);
     await audit(q, reversal ? "rejection_reversed_approved" : "payment_approved", orderId, { staffId, amountPaise: o.amount_paise });
     return { result: "approved" };
   });

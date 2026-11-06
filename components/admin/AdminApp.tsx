@@ -330,7 +330,7 @@ function Passes() {
   return (
     <section>
       <h2 className="flex items-center gap-1.5 text-lg">Passes<Tip text="Each row is one kind of ticket. Change the numbers and press Save. Buyers see the new price and availability within a few seconds." /></h2>
-      <p className="muted mt-1 text-sm">Pick one admission (admits 1) or a couple pass (admits 2: one QR, one scan). Prices in rupees.</p>
+      <p className="muted mt-1 text-sm">Pick one admission (admits 1) or a couple pass (admits 2: each person gets their own QR). Prices in rupees.</p>
       <Err m={err} />{msg && <p role="status" className="mt-3 text-sm">{msg}</p>}
       <div className="mt-4" data-tour="ps-sales"><SalesSwitch /></div>
       <div className="mt-4 flex flex-col gap-3">
@@ -371,7 +371,7 @@ function PassRow({ p, fresh, tour, onSaved }: { p: Pass; fresh?: boolean; tour?:
         ))}
         {!fresh && <span className="muted text-sm tnum">{p.sold} sold · {p.held ?? 0} held · {Math.max(0, (parseInt(f.total || "0", 10) || 0) - p.sold - (p.held ?? 0))} left. Save to apply.</span>}
       </div>
-      <div className={`${cell} min-w-[90px] flex-1`}><label className="label flex items-center gap-1.5">Admits<Tip text="How many people one ticket lets in. 1 = a single pass. 2 = a couple pass: one QR code that is scanned once for both people." /></label><input className="field" inputMode="numeric" value={f.admits} onChange={set("admits")} /></div>
+      <div className={`${cell} min-w-[90px] flex-1`}><label className="label flex items-center gap-1.5">Admits<Tip text="How many people one ticket lets in. 1 = a single pass. 2 = a couple pass: it is for two people and each gets their own QR code and ticket email." /></label><input className="field" inputMode="numeric" value={f.admits} onChange={set("admits")} /></div>
       <div className={`${cell} min-w-[200px] flex-1`}><label className="label flex items-center gap-1.5" htmlFor={`ss-${p.id || "new"}`}>Sales open (IST)<Tip text="Optional. The pass can only be bought from this date and time. Leave empty to start straight away." /></label><input id={`ss-${p.id || "new"}`} type="datetime-local" className="field" value={f.start} onChange={set("start")} /></div>
       <div className={`${cell} min-w-[200px] flex-1`}><label className="label flex items-center gap-1.5" htmlFor={`se-${p.id || "new"}`}>Sales close (IST)<Tip text="Optional. After this date and time the pass can no longer be bought, for example when an Early Bird offer ends. Leave empty for no end." /></label><input id={`se-${p.id || "new"}`} type="datetime-local" className="field" value={f.end} onChange={set("end")} /></div>
       <div className={`${cell} basis-full`}><label className="label">Description</label><input className="field" value={f.description} onChange={set("description")} /></div>

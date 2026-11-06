@@ -77,7 +77,10 @@ export async function sendAdminAlert(to: string, m: { subject: string; lines: st
 
 
 async function ticketMail(orderId: string, to: string): Promise<Mail> {
-  const tickets = await ticketsForOrder({ query }, orderId);
+  // The buyer gets every ticket on the order; anyone else gets only the ticket(s) made out to them.
+  const [ord] = await query("SELECT buyer_email, buyer_name FROM orders WHERE id = $1", [orderId]);
+  const forBuyer = !ord || ord.buyer_email === to;
+  const tickets = await ticketsForOrder({ query }, orderId, forBuyer ? undefined : to);
   const attachments = await Promise.all(
     tickets.map(async (t) => ({
       filename: `${t.shortCode}.pdf`,
@@ -93,7 +96,7 @@ async function ticketMail(orderId: string, to: string): Promise<Mail> {
     )
     .join("");
   const inner = `<p style="margin:0 0 14px;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#e3302f">You&#39;re on the list</p>
-<p>Welcome to the night. Your ticket PDF is attached and also on the ticket page. If your phone has no signal at the door, show the short code below.</p>
+<p>${forBuyer ? "Welcome to the night." : `${esc(ord.buyer_name)} booked this for you.`} Your ticket PDF is attached and also on the ticket page. If your phone has no signal at the door, show the short code below.</p>
 ${blocks}
 <p style="font-size:14px;color:#cbced2">${esc(eventConfig.dateLabel)} · Doors ${esc(eventConfig.doorsOpen)}<br>${esc(eventConfig.venue.name)}, ${esc(eventConfig.venue.address)}<br>Carry a valid government photo ID.</p>
 <p style="margin:0 0 10px"><a href="${appUrl()}/find-ticket" style="color:#f1eeea;font-weight:700;border-bottom:1px solid #e3302f;text-decoration:none">Find your ticket any time &rarr;</a></p>
@@ -190,6 +193,15 @@ export async function sendFindMyTicket(email: string | null, phone: string | nul
   );
   const byEmail = new Map<string, { id: string; status: string }[]>();
   for (const r of rows) byEmail.set(r.buyer_email, [...(byEmail.get(r.buyer_email) ?? []), { id: r.id, status: r.status }]);
+  // Someone a friend booked for can look up their own ticket by the email on it.
+  if (email) {
+    const held = await query(
+      `SELECT DISTINCT o.id FROM tickets t JOIN orders o ON o.id = t.order_id
+        WHERE o.status = 'paid' AND t.holder_email = $1 AND o.buyer_email <> $1`,
+      [email],
+    );
+    for (const h of held) byEmail.set(email, [...(byEmail.get(email) ?? []), { id: h.id as string, status: "paid" }]);
+  }
   for (const [to, orders] of byEmail) {
     const [{ n }] = await query(
       "SELECT count(*)::int AS n FROM email_outbox WHERE to_email = $1 AND kind = 'find' AND created_at > now() - interval '1 hour'",

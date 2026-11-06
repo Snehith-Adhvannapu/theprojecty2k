@@ -13,10 +13,16 @@ interface Row {
 }
 interface Queue { pending: Row[]; reviewed: Row[] }
 /** What the approval pop-up shows: who, whether the email went, and the ticket links to send on WhatsApp. */
-interface Approved { name: string; phone: string; email: string; emailSent: boolean; tokens: string[] }
-type ApproveRes = { result: string; emailSent?: boolean; tokens?: string[] };
+interface Approved { name: string; phone: string; email: string; emailSent: boolean; emailsSent: number; emailsTotal: number; tokens: string[]; people: { name: string; phone: string; token: string }[] }
+type ApproveRes = { result: string; emailSent?: boolean; emailsSent?: number; emailsTotal?: number; tokens?: string[]; people?: { name: string; phone: string; token: string }[] };
 
-const toApproved = (r: Row, x: ApproveRes): Approved => ({ name: r.buyerName, phone: r.buyerPhone, email: r.buyerEmail, emailSent: !!x.emailSent, tokens: x.tokens ?? [] });
+const toApproved = (r: Row, x: ApproveRes): Approved => ({ name: r.buyerName, phone: r.buyerPhone, email: r.buyerEmail, emailSent: !!x.emailSent, emailsSent: x.emailsSent ?? 0, emailsTotal: x.emailsTotal ?? 0, tokens: x.tokens ?? [], people: x.people ?? [] });
+/** One person's own ticket on WhatsApp, to their own number. */
+const waPerson = (p: { name: string; phone: string; token: string }) => {
+  const text = [`Hi ${p.name}, your Project Y2K ticket is confirmed.`, "Open your ticket (QR + PDF):", `${window.location.origin}/t/${p.token}`, "Show the QR at the door. See you on 15 Nov!"].join("\n");
+  return `https://wa.me/${p.phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
+};
+
 const waTicket = (a: Approved) => {
   const links = a.tokens.map((t) => `${window.location.origin}/t/${t}`);
   const lead = links.length > 1 ? "Your tickets (QR + PDF):" : "Open your ticket (QR + PDF):";
@@ -31,11 +37,23 @@ function ApprovedDialog({ a, onClose }: { a: Approved; onClose: () => void }) {
         <h2 id="ap-t" className="text-xl">Approved</h2>
         <p className="mt-3 text-[15px]">{a.name}&apos;s {a.tokens.length > 1 ? `${a.tokens.length} tickets are` : "ticket is"} ready.</p>
         <p className={`mt-3 rounded-sm border p-3 text-[15px] ${a.emailSent ? "border-line" : "border-danger"}`} role="status">
-          {a.emailSent ? <>Email with the PDF ticket sent to <strong className="break-all font-semibold">{a.email}</strong>.</> : <>The email has not gone out yet. It will retry on its own. You can send the ticket on WhatsApp now.</>}
+          {a.emailSent
+            ? (a.emailsTotal > 1 ? <>Tickets emailed to all {a.emailsTotal} people on the order. <strong className="break-all font-semibold">{a.email}</strong> got every ticket.</> : <>Email with the PDF ticket sent to <strong className="break-all font-semibold">{a.email}</strong>.</>)
+            : <>{a.emailsSent} of {a.emailsTotal} emails have gone out. The rest will retry on their own. You can send the tickets on WhatsApp now.</>}
         </p>
         <p className="muted mt-3 text-sm">Want them to have it faster? Send it on WhatsApp too. The message holds the link to the ticket with the QR code and PDF.</p>
+        {a.people.length > 1 && (
+          <ul className="mt-4 divide-y divide-line border border-line text-[15px]">
+            {a.people.map((p, i) => (
+              <li key={i} className="flex items-center justify-between gap-3 px-3 py-2">
+                <span className="min-w-0 truncate">{p.name}</span>
+                <a className="inline-flex min-h-11 shrink-0 items-center border-b border-blood" href={waPerson(p)} target="_blank" rel="noreferrer">WhatsApp their ticket</a>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          {a.tokens.length > 0 && a.phone && <a className="btn btn-primary btn-calm min-h-11 flex-1 px-5" href={waTicket(a)} target="_blank" rel="noreferrer">Send on WhatsApp</a>}
+          {a.tokens.length > 0 && a.phone && <a className="btn btn-primary btn-calm min-h-11 flex-1 px-5" href={waTicket(a)} target="_blank" rel="noreferrer">{a.people.length > 1 ? "Send all to the buyer" : "Send on WhatsApp"}</a>}
           <button className="btn btn-quiet btn-calm min-h-11 flex-1 px-5" onClick={onClose} autoFocus>Done</button>
         </div>
       </div>

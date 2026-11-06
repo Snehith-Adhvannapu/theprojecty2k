@@ -128,6 +128,8 @@ export async function lookupGuests(q: string): Promise<LookupRow[]> {
     `SELECT t.id, t.holder_name, t.admits, t.short_code, t.status, t.holder_phone, t.used_at, p.name AS pass_name
        FROM tickets t JOIN pass_types p ON p.id = t.pass_type_id
       WHERE t.holder_name ILIKE $1
+         OR t.holder_email ILIKE $1
+         OR t.holder_instagram ILIKE $1
          OR ($2 <> '' AND length($2) = 4 AND right(t.holder_phone, 4) = $2)
          OR ($3::text IS NOT NULL AND t.short_code = $3)
          OR t.short_code ILIKE $4

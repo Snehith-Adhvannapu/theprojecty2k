@@ -15,8 +15,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     await flushOutbox(id).catch(() => {});
     // What the admin needs for the "approved" pop-up: did the email go, and the ticket links for WhatsApp.
     if (r.result !== "approved" && r.result !== "already_approved") return ok(r);
-    const [mail] = await query("SELECT status FROM email_outbox WHERE order_id = $1 AND kind = 'ticket' ORDER BY created_at DESC LIMIT 1", [id]);
-    const tokens = (await ticketsForOrder({ query }, id)).map((t) => t.token);
-    return ok({ ...r, emailSent: mail?.status === "sent", tokens });
+    const mails = await query("SELECT to_email, status FROM email_outbox WHERE order_id = $1 AND kind = 'ticket'", [id]);
+    const tickets = await ticketsForOrder({ query }, id);
+    const holders = await query("SELECT id, holder_name, holder_phone FROM tickets WHERE order_id = $1", [id]);
+    const people = tickets.map((t) => { const h = holders.find((x) => x.id === t.id); return { name: (h?.holder_name ?? t.holderName) as string, phone: (h?.holder_phone ?? "") as string, token: t.token }; });
+    return ok({ ...r, emailSent: mails.length > 0 && mails.every((m) => m.status === "sent"), emailsTotal: mails.length, emailsSent: mails.filter((m) => m.status === "sent").length, tokens: tickets.map((t) => t.token), people });
   });
 }

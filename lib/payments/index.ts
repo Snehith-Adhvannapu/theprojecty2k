@@ -3,7 +3,7 @@
 import { AppError } from "@/lib/errors";
 import { query, transaction, type Q } from "@/lib/db";
 import { availability } from "@/lib/inventory";
-import { issueTicketsForOrder, ticketsForOrder, type TicketView } from "@/lib/tickets";
+import { issueTicketsForOrder, queueTicketEmails, ticketsForOrder, type TicketView } from "@/lib/tickets";
 import { getProvider, type PaymentEvent } from "./provider";
 
 export type ApplyResult =
@@ -106,7 +106,7 @@ async function applyCapture(q: Q, ev: Extract<PaymentEvent, { kind: "captured" }
   await markCaptured();
   await q.query("UPDATE orders SET status = 'paid', paid_at = now() WHERE id = $1", [order.id]);
   await issueTicketsForOrder(q, order.id);
-  await q.query("INSERT INTO email_outbox (order_id, to_email, kind) VALUES ($1,$2,'ticket')", [order.id, order.buyer_email]);
+  await queueTicketEmails(q, order.id);
   return { result: "confirmed", orderId: order.id };
 }
 

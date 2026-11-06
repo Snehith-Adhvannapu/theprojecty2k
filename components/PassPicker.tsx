@@ -100,7 +100,7 @@ export function PassPicker() {
         <p>
           {sel ? (
             <>
-              Selected: <strong className="font-semibold">{sel.name}</strong> · Admits {sel.admits} · {paise(sel.pricePaise)}{" "}<Tip text="Admits shows how many people one ticket lets in. A couple pass admits 2 on one QR code. You choose how many tickets on the next page." />
+              Selected: <strong className="font-semibold">{sel.name}</strong> · Admits {sel.admits} · {paise(sel.pricePaise)}{" "}<Tip text="Admits shows how many people one ticket lets in. A couple pass is for 2 people, and each gets their own QR code. You choose how many tickets on the next page." />
             </>
           ) : (
             "Pick a pass to continue."

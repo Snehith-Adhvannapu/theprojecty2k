@@ -84,15 +84,33 @@ export async function issueTicket(q: Q, t: IssueInput): Promise<{ id: string; sh
 /** Issues every ticket for a paid order (one per pass unit). Inside the caller's transaction. */
 export async function issueTicketsForOrder(q: Q, orderId: string): Promise<number> {
   const [order] = await q.query(
-    "SELECT buyer_name, buyer_phone, buyer_email, buyer_instagram, guest_instagrams FROM orders WHERE id = $1",
+    "SELECT buyer_name, buyer_phone, buyer_email, buyer_instagram, guest_instagrams, guest_people FROM orders WHERE id = $1",
     [orderId],
   );
   const items = await q.query(
     `SELECT oi.id, oi.qty, oi.pass_type_id, p.admits
-       FROM order_items oi JOIN pass_types p ON p.id = oi.pass_type_id WHERE oi.order_id = $1`,
+       FROM order_items oi JOIN pass_types p ON p.id = oi.pass_type_id WHERE oi.order_id = $1 ORDER BY oi.id`,
     [orderId],
   );
-  // Handles go to tickets in issue order: the buyer first, then the guests. A ticket carries the first handle of the people it admits; the full list stays on the order.
+  // New orders: every person has their own ticket (a couple pass is two tickets, one QR each), made out to that person.
+  if (Array.isArray(order.guest_people)) {
+    const people = [
+      { name: order.buyer_name, phone: order.buyer_phone, email: order.buyer_email, instagram: order.buyer_instagram },
+      ...(order.guest_people as { name: string; phone: string; email: string; instagram: string }[]),
+    ];
+    let next = 0;
+    for (const it of items) {
+      for (let i = 0; i < it.qty * it.admits; i++) {
+        const p = people[next++] ?? people[0];
+        await issueTicket(q, {
+          orderId, orderItemId: it.id, passTypeId: it.pass_type_id, admits: 1,
+          holderName: p.name, holderPhone: p.phone, holderEmail: p.email, holderInstagram: p.instagram, source: "purchase",
+        });
+      }
+    }
+    return next;
+  }
+  // Older orders (before per-person details): one ticket per pass, as before. Handles go to tickets in issue order: the buyer first, then the guests. A ticket carries the first handle of the people it admits; the full list stays on the order.
   const guests = Array.isArray(order.guest_instagrams) ? (order.guest_instagrams as string[]) : [];
   const handles = [order.buyer_instagram, ...guests].filter((h): h is string => !!h);
   let cursor = 0;
@@ -128,12 +146,13 @@ export interface TicketView {
   token: string;
 }
 
-export async function ticketsForOrder(q: Q, orderId: string): Promise<TicketView[]> {
+/** All tickets of an order, or only those made out to one email address. */
+export async function ticketsForOrder(q: Q, orderId: string, onlyEmail?: string): Promise<TicketView[]> {
   const rows = await q.query(
     `SELECT t.id, t.short_code, t.admits, t.status, t.holder_name, t.used_at, p.name AS pass_name
        FROM tickets t JOIN pass_types p ON p.id = t.pass_type_id
-      WHERE t.order_id = $1 ORDER BY t.created_at, t.id`,
-    [orderId],
+      WHERE t.order_id = $1 AND ($2::text IS NULL OR t.holder_email = $2) ORDER BY t.created_at, t.id`,
+    [orderId, onlyEmail ?? null],
   );
   return rows.map((r) => ({
     id: r.id,
@@ -154,4 +173,15 @@ export async function ticketByToken(q: Q, token: string) {
     [hashToken(token)],
   );
   return rows[0] ?? null;
+}
+
+/** Queues the ticket email: the buyer gets every ticket, and each other person on the order gets their own. One email per address. */
+export async function queueTicketEmails(q: Q, orderId: string): Promise<number> {
+  const rows = await q.query<{ to_email: string }>(
+    `SELECT buyer_email AS to_email FROM orders WHERE id = $1
+     UNION SELECT holder_email FROM tickets WHERE order_id = $1 AND holder_email IS NOT NULL`,
+    [orderId],
+  );
+  for (const r of rows) await q.query("INSERT INTO email_outbox (order_id, to_email, kind) VALUES ($1,$2,'ticket')", [orderId, r.to_email]);
+  return rows.length;
 }
